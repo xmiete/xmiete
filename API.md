@@ -5,9 +5,19 @@ This document describes the RESTful API for managing digital rental deposits acc
 ## Base URL
 `https://api.xmiete.org/v1`
 
-## Authentication
+## Authentication & Security
 All requests must be authenticated using **OAuth2 Bearer Tokens**.
 `Authorization: Bearer <token>`
+
+For detailed security requirements, including **mTLS** and **JWS signing** of critical state changes, refer to [SECURITY.md](./SECURITY.md).
+
+### Required Scopes
+- `POST /deposits`: `deposit:create`
+- `GET /deposits/{id}`: `deposit:read`
+- `PATCH /deposits/{id}/identity`: `deposit:write`
+- `POST /deposits/{id}/pledge`: `deposit:pledge`
+- `POST /deposits/{id}/release`: `deposit:release`
+- `POST /deposits/{id}/claim`: `deposit:claim`
 
 ## Core Endpoints
 

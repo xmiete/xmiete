@@ -84,7 +84,8 @@
               },
               "timestamp": { "type": "string", "format": "date-time" },
               "actor": { "type": "string", "description": "Entity that triggered the transition (e.g., TENANT, BANK, LANDLORD)" },
-              "comment": { "type": "string" }
+              "comment": { "type": "string" },
+              "signature": { "type": "string", "description": "JWS (JSON Web Signature) for non-repudiation of critical transitions." }
             }
           }
         }
