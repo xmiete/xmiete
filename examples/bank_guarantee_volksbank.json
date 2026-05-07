@@ -34,7 +34,10 @@
     "amount": 3000.00,
     "currency": "EUR",
     "type": "BANK_GUARANTEE",
-    "lifecycle_state": "REQUESTED"
+    "lifecycle_state": "REQUESTED",
+    "history": [
+      { "state": "REQUESTED", "timestamp": "2026-05-07T11:00:00Z", "actor": "TENANT" }
+    ]
   },
   "provider": {
     "provider_type": "BANK_SYSTEM_PARTNER",

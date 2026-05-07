@@ -70,7 +70,23 @@
         },
         "lifecycle_state": {
           "type": "string",
-          "enum": ["REQUESTED", "IDENTIFIED", "PLEDGED", "RELEASED", "CLAIMED", "CLOSED"]
+          "enum": ["REQUESTED", "IDENTIFIED", "FUNDED", "PLEDGED", "RELEASED", "CLAIMED", "CLOSED"]
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["state", "timestamp"],
+            "properties": {
+              "state": { 
+                "type": "string",
+                "enum": ["REQUESTED", "IDENTIFIED", "FUNDED", "PLEDGED", "RELEASED", "CLAIMED", "CLOSED"]
+              },
+              "timestamp": { "type": "string", "format": "date-time" },
+              "actor": { "type": "string", "description": "Entity that triggered the transition (e.g., TENANT, BANK, LANDLORD)" },
+              "comment": { "type": "string" }
+            }
+          }
         }
       }
     },

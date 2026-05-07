@@ -33,7 +33,12 @@
     "amount": 2100.00,
     "currency": "EUR",
     "type": "INSURANCE",
-    "lifecycle_state": "PLEDGED"
+    "lifecycle_state": "PLEDGED",
+    "history": [
+      { "state": "REQUESTED", "timestamp": "2026-05-07T09:00:00Z", "actor": "TENANT" },
+      { "state": "IDENTIFIED", "timestamp": "2026-05-07T09:45:00Z", "actor": "TENANT", "comment": "eID verified" },
+      { "state": "PLEDGED", "timestamp": "2026-05-07T12:00:00Z", "actor": "INSURER", "comment": "Policy issued" }
+    ]
   },
   "provider": {
     "provider_type": "INSURANCE_BROKER",
