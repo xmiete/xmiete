@@ -1,0 +1,14 @@
+{
+  "meta": { "version": "1.0.0", "timestamp": "2026-05-07T10:00:00Z" },
+  "tenant": {
+    "first_name": "Invalid",
+    "last_name": "TaxID",
+    "email": "test@example.com",
+    "tax_id": "123",
+    "eid_status": "VERIFIED",
+    "address": { "street": "S", "zip": "1", "city": "C", "country": "DE" }
+  },
+  "landlord": { "name": "L" },
+  "property": { "address": { "street": "S", "zip": "1", "city": "C", "country": "DE" } },
+  "deposit": { "amount": 100, "currency": "EUR", "type": "INSURANCE", "lifecycle_state": "REQUESTED" }
+}
