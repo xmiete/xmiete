@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://xmiete.org/schemas/xmiete_schema.json",
+  "$comment": "Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0). See LICENSE-SPECIFICATION for details.",
   "title": "XMiete Core Schema",
   "description": "A modular standard for digital rental deposits (BGB § 551 compliant).",
   "type": "object",
