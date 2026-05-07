@@ -1,0 +1,134 @@
+openapi: 3.0.3
+info:
+  title: XMiete Core API
+  description: Open-source standard for digital rental deposits (BGB § 551 compliant).
+  version: 1.0.0
+  contact:
+    name: XMiete Open Source
+    url: https://xmiete.org
+servers:
+  - url: https://api.xmiete.org/v1
+    description: Production API
+paths:
+  /deposits:
+    post:
+      summary: Create a new deposit request
+      operationId: createDeposit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './xmiete_schema.json'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: './xmiete_schema.json'
+  /deposits/{id}:
+    get:
+      summary: Get deposit details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './xmiete_schema.json'
+  /deposits/{id}/identity:
+    patch:
+      summary: Update identity verification status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eid_status]
+              properties:
+                eid_status:
+                  type: string
+                  enum: [VERIFIED, FAILED]
+      responses:
+        '200':
+          description: Updated
+  /deposits/{id}/pledge:
+    post:
+      summary: Confirm legal pledge
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pledge_date, is_confirmed_by_bank]
+              properties:
+                pledge_date:
+                  type: string
+                  format: date
+                is_confirmed_by_bank:
+                  type: boolean
+      responses:
+        '200':
+          description: Pledged
+  /deposits/{id}/release:
+    post:
+      summary: Authorize deposit release
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Released
+  /deposits/{id}/claim:
+    post:
+      summary: Initiate claim
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [claim_amount, reason]
+              properties:
+                claim_amount:
+                  type: number
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Claimed
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - BearerAuth: []
