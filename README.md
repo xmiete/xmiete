@@ -25,3 +25,11 @@ XMiete Core provides a unified JSON schema and API design to digitize the entire
 
 ## Getting Started
 The core of this project is the `xmiete_schema.json`. See the documentation for implementation details.
+
+## License
+XMiete Core is dual-licensed to ensure both widespread adoption of the standard and legal protection for the code:
+
+- **Specification & Documentation:** Licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](LICENSE-SPECIFICATION). This covers the JSON schemas (`.json`), API definitions (`.yaml`), and all Markdown documentation.
+- **Code & SDK Examples:** Licensed under the [Apache License, Version 2.0](LICENSE). This covers all source code in the `sdk-examples/`, `tests/`, and helper scripts.
+
+Copyright © 2026 XMiete Core Contributors
