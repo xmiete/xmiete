@@ -2,7 +2,7 @@
   "meta": {
     "version": "1.0.0",
     "timestamp": "2026-05-07T11:00:00Z",
-    "external_id": "VB-B-456"
+    "external_id": "PF-VB-456"
   },
   "tenant": {
     "first_name": "Max",
@@ -37,9 +37,8 @@
     "lifecycle_state": "REQUESTED"
   },
   "provider": {
-    "bank_name": "Volksbank",
-    "custom_fields": {
-      "branch_code": "0815"
-    }
+    "provider_type": "BANK_SYSTEM_PARTNER",
+    "executing_entity": "Volksbank",
+    "brand_name": "PlusForta"
   }
 }

@@ -85,10 +85,22 @@
     },
     "provider": {
       "type": "object",
-      "description": "Stakeholder specific data (extensible)",
+      "description": "Information about the bank, insurer, or fintech platform providing the deposit.",
+      "required": ["provider_type", "executing_entity"],
       "properties": {
-        "bank_name": { "type": "string", "enum": ["Instabank", "Volksbank", "Hausbank", "Other"] },
-        "fintech_name": { "type": "string", "enum": ["heykaution", "getmomo", "smartmiete", "Other"] },
+        "provider_type": {
+          "type": "string",
+          "enum": ["BANK_SYSTEM_PARTNER", "INSURANCE_BROKER", "DIRECT_BANK", "FINTECH_PLATFORM"]
+        },
+        "executing_entity": { 
+          "type": "string", 
+          "description": "The legal entity holding the funds or issuing the guarantee (e.g., Aareal Bank, Volksbank, Instabank)."
+        },
+        "brand_name": { 
+          "type": "string", 
+          "description": "The brand or platform name facing the user (e.g., GetMomo, PlusForta, Smartmiete)."
+        },
+        "provider_id": { "type": "string", "description": "Internal identifier for the provider" },
         "insurance_policy_number": { "type": "string" },
         "custom_fields": { "type": "object" }
       }

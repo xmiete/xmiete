@@ -2,7 +2,7 @@
   "meta": {
     "version": "1.0.0",
     "timestamp": "2026-05-07T10:00:00Z",
-    "external_id": "MOMO-12345"
+    "external_id": "AAREAL-MOMO-123"
   },
   "tenant": {
     "first_name": "Erika",
@@ -34,7 +34,7 @@
   "deposit": {
     "amount": 1500.00,
     "currency": "EUR",
-    "type": "INSURANCE",
+    "type": "CASH_EQUIVALENT",
     "lifecycle_state": "PLEDGED"
   },
   "pledge": {
@@ -43,10 +43,11 @@
     "is_confirmed_by_bank": true
   },
   "provider": {
-    "fintech_name": "getmomo",
-    "insurance_policy_number": "POL-998877",
+    "provider_type": "BANK_SYSTEM_PARTNER",
+    "executing_entity": "Aareal Bank AG",
+    "brand_name": "GetMomo",
     "custom_fields": {
-      "commission_rate": 0.05
+      "management_software_id": "HV-7788"
     }
   }
 }
