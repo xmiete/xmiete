@@ -4,9 +4,12 @@
 XMiete Core is an open-source standard (JSON/REST) for the digital rental deposit (Mietkaution). It bridges the gap between Fintechs, Banks, Insurance companies, and Property Management software.
 
 ### Key Stakeholders
-- **Fintechs:** heykaution, getmomo, smartmiete
-- **Banks:** Instabank (Finland-Passporting), Volksbank, Hausbank
-- **Property Managers:** Various software solutions
+- **Fintechs/Brands:** heykaution, getmomo, smartmiete, PlusForta
+- **Banks & Institutions:** 
+  - Aareal Bank, Volksbank, Instabank
+  - Hausbank München eG
+  - DKB, Sparkassen, PSD Banken
+- **Property Managers:** Various software solutions (PropTech)
 
 ## Technical Standards
 - **Schema:** JSON Schema (draft-07 or later).
