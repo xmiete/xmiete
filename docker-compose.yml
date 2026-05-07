@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: xmiete
+      POSTGRES_PASSWORD: xmiete
+      POSTGRES_DB: xmiete
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./server/internal/db/migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U xmiete"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://xmiete:xmiete@db:5432/xmiete
+      JWT_SECRET: change-me-in-production
+      PORT: "8080"
+      # WEBHOOK_URL: https://your-operator-webhook.example.com/xmiete-events
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pg_data:
