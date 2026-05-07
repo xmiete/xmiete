@@ -1,0 +1,52 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "timestamp": "2026-05-07T10:00:00Z",
+    "external_id": "MOMO-12345"
+  },
+  "tenant": {
+    "first_name": "Erika",
+    "last_name": "Mustermann",
+    "email": "erika@example.de",
+    "tax_id": "12345678901",
+    "eid_status": "VERIFIED",
+    "address": {
+      "street": "Musterstr. 1",
+      "zip": "10115",
+      "city": "Berlin",
+      "country": "DE"
+    }
+  },
+  "landlord": {
+    "name": "Hausverwaltung Meyer",
+    "type": "COMMERCIAL",
+    "iban": "DE12345678901234567890"
+  },
+  "property": {
+    "address": {
+      "street": "Hauptstr. 10",
+      "zip": "10115",
+      "city": "Berlin",
+      "country": "DE"
+    },
+    "unit_id": "OG-Links-04"
+  },
+  "deposit": {
+    "amount": 1500.00,
+    "currency": "EUR",
+    "type": "INSURANCE",
+    "lifecycle_state": "PLEDGED"
+  },
+  "pledge": {
+    "pledge_date": "2026-05-07",
+    "legal_reference": "BGB § 551",
+    "is_confirmed_by_bank": true
+  },
+  "provider": {
+    "fintech_name": "getmomo",
+    "insurance_policy_number": "POL-998877",
+    "custom_fields": {
+      "commission_rate": 0.05
+    }
+  }
+}

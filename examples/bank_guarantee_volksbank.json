@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "timestamp": "2026-05-07T11:00:00Z",
+    "external_id": "VB-B-456"
+  },
+  "tenant": {
+    "first_name": "Max",
+    "last_name": "Mustermann",
+    "email": "max@mustermann.de",
+    "tax_id": "98765432109",
+    "eid_status": "NOT_STARTED",
+    "address": {
+      "street": "Bahnhofstr. 5",
+      "zip": "80331",
+      "city": "München",
+      "country": "DE"
+    }
+  },
+  "landlord": {
+    "name": "Immobilien GmbH",
+    "type": "COMMERCIAL",
+    "iban": "DE99887766554433221100"
+  },
+  "property": {
+    "address": {
+      "street": "Kaiserstr. 10",
+      "zip": "80801",
+      "city": "München",
+      "country": "DE"
+    }
+  },
+  "deposit": {
+    "amount": 3000.00,
+    "currency": "EUR",
+    "type": "BANK_GUARANTEE",
+    "lifecycle_state": "REQUESTED"
+  },
+  "provider": {
+    "bank_name": "Volksbank",
+    "custom_fields": {
+      "branch_code": "0815"
+    }
+  }
+}

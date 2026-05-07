@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://xmiete.org/schemas/xmiete_schema.json",
+  "title": "XMiete Core Schema",
+  "description": "A modular standard for digital rental deposits (BGB § 551 compliant).",
+  "type": "object",
+  "required": [
+    "meta",
+    "tenant",
+    "landlord",
+    "property",
+    "deposit"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["version", "timestamp"],
+      "properties": {
+        "version": { "type": "string", "example": "1.0.0" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "external_id": { "type": "string", "description": "ID from the calling system" }
+      }
+    },
+    "tenant": {
+      "type": "object",
+      "required": ["first_name", "last_name", "email"],
+      "properties": {
+        "first_name": { "type": "string" },
+        "last_name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "tax_id": { 
+          "type": "string", 
+          "pattern": "^[0-9]{11}$",
+          "description": "German 11-digit Steuer-ID for tax logic."
+        },
+        "eid_status": {
+          "type": "string",
+          "enum": ["NOT_STARTED", "IN_PROGRESS", "VERIFIED", "FAILED"],
+          "default": "NOT_STARTED"
+        },
+        "address": { "$ref": "#/definitions/address" }
+      }
+    },
+    "landlord": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "description": "Name of landlord or property management" },
+        "type": { "type": "string", "enum": ["PRIVATE", "COMMERCIAL"] },
+        "iban": { "type": "string", "pattern": "^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$" }
+      }
+    },
+    "property": {
+      "type": "object",
+      "required": ["address"],
+      "properties": {
+        "address": { "$ref": "#/definitions/address" },
+        "unit_id": { "type": "string", "description": "Specific apartment/unit identifier" }
+      }
+    },
+    "deposit": {
+      "type": "object",
+      "required": ["amount", "currency", "type", "lifecycle_state"],
+      "properties": {
+        "amount": { "type": "number", "minimum": 0 },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$", "default": "EUR" },
+        "type": { 
+          "type": "string", 
+          "enum": ["CASH_EQUIVALENT", "BANK_GUARANTEE", "INSURANCE"] 
+        },
+        "lifecycle_state": {
+          "type": "string",
+          "enum": ["REQUESTED", "IDENTIFIED", "PLEDGED", "RELEASED", "CLAIMED", "CLOSED"]
+        }
+      }
+    },
+    "pledge": {
+      "type": "object",
+      "description": "BGB § 551 specific data",
+      "properties": {
+        "pledge_date": { "type": "string", "format": "date" },
+        "legal_reference": { "type": "string", "default": "BGB § 551" },
+        "is_confirmed_by_bank": { "type": "boolean", "default": false }
+      }
+    },
+    "provider": {
+      "type": "object",
+      "description": "Stakeholder specific data (extensible)",
+      "properties": {
+        "bank_name": { "type": "string", "enum": ["Instabank", "Volksbank", "Hausbank", "Other"] },
+        "fintech_name": { "type": "string", "enum": ["heykaution", "getmomo", "smartmiete", "Other"] },
+        "insurance_policy_number": { "type": "string" },
+        "custom_fields": { "type": "object" }
+      }
+    }
+  },
+  "definitions": {
+    "address": {
+      "type": "object",
+      "required": ["street", "zip", "city", "country"],
+      "properties": {
+        "street": { "type": "string" },
+        "zip": { "type": "string" },
+        "city": { "type": "string" },
+        "country": { "type": "string", "pattern": "^[A-Z]{2}$", "default": "DE" }
+      }
+    }
+  }
+}
