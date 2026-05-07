@@ -1,0 +1,84 @@
+use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc, NaiveDate};
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Deposit {
+    pub meta: Meta,
+    pub tenant: Tenant,
+    pub landlord: Landlord,
+    pub property: Property,
+    pub deposit_details: DepositDetails,
+    pub pledge: Option<Pledge>,
+    pub provider: Provider,
+    pub history: Vec<HistoryEntry>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Meta {
+    pub version: String,
+    pub timestamp: DateTime<Utc>,
+    pub external_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Tenant {
+    pub first_name: String,
+    pub last_name: String,
+    pub email: String,
+    pub tax_id: Option<String>,
+    pub eid_status: String,
+    pub address: Address,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Address {
+    pub street: String,
+    pub zip: String,
+    pub city: String,
+    pub country: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Landlord {
+    pub name: String,
+    pub landlord_type: String, // "PRIVATE" or "COMMERCIAL"
+    pub iban: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Property {
+    pub address: Address,
+    pub unit_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DepositDetails {
+    pub amount: f64,
+    pub currency: String,
+    pub deposit_type: String,
+    pub lifecycle_state: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Pledge {
+    pub pledge_date: Option<NaiveDate>,
+    pub legal_reference: String,
+    pub is_confirmed_by_bank: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Provider {
+    pub provider_type: String,
+    pub executing_entity: String,
+    pub brand_name: Option<String>,
+    pub insurance_policy_number: Option<String>,
+    pub custom_fields: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct HistoryEntry {
+    pub state: String,
+    pub timestamp: DateTime<Utc>,
+    pub actor: String,
+    pub comment: Option<String>,
+}
