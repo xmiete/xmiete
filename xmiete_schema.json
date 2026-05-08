@@ -39,6 +39,7 @@
           "enum": ["NOT_STARTED", "IN_PROGRESS", "VERIFIED", "FAILED"],
           "default": "NOT_STARTED"
         },
+        "wallet_metadata": { "$ref": "#/definitions/wallet_metadata" },
         "address": { "$ref": "#/definitions/address" }
       }
     },
@@ -125,6 +126,58 @@
     }
   },
   "definitions": {
+    "wallet_metadata": {
+      "type": "object",
+      "description": "eIDAS 2.0 / EUDI-Wallet credential metadata for tenant identity verification.",
+      "properties": {
+        "issuer": {
+          "type": "string",
+          "description": "Human-readable name of the credential issuer (e.g., 'Bundesdruckerei GmbH')."
+        },
+        "issuer_id": {
+          "type": "string",
+          "description": "URI or DID identifying the credential issuer (e.g., 'https://pid.bundesdruckerei.de' or 'did:web:bundesdruckerei.de')."
+        },
+        "wallet_provider": {
+          "type": "string",
+          "description": "Identifier of the EUDI Wallet provider app (e.g., 'bundesdruckerei', 'lissi', 'sprind')."
+        },
+        "credential_type": {
+          "type": "string",
+          "enum": ["PID", "EAA", "QEAA", "MDL"],
+          "description": "EUDI credential type: PID (Person Identification Data), EAA/QEAA (Electronic Attestation of Attributes), or MDL (mobile Driving License)."
+        },
+        "credential_format": {
+          "type": "string",
+          "enum": ["vc+sd-jwt", "mso_mdoc", "ldp_vc"],
+          "description": "Credential encoding format per OpenID4VCI / EUDI ARF."
+        },
+        "assurance_level": {
+          "type": "string",
+          "enum": ["low", "substantial", "high"],
+          "description": "eIDAS Level of Assurance per Article 8 of Regulation (EU) No 910/2014 as amended by eIDAS 2.0."
+        },
+        "presentation_id": {
+          "type": "string",
+          "description": "Opaque reference to the Verifiable Presentation submitted during verification."
+        },
+        "issuing_country": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$",
+          "description": "ISO 3166-1 alpha-2 country code of the credential issuer."
+        },
+        "verified_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the EUDI Wallet presentation was verified by the relying party."
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Expiry timestamp of the wallet credential."
+        }
+      }
+    },
     "address": {
       "type": "object",
       "required": ["street", "zip", "city", "country"],

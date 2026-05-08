@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "timestamp": "2026-05-08T09:30:00Z",
+    "external_id": "SPRIND-WALLET-2026-0042"
+  },
+  "tenant": {
+    "first_name": "Max",
+    "last_name": "Mustermann",
+    "email": "max@example.de",
+    "tax_id": "98765432101",
+    "eid_status": "VERIFIED",
+    "wallet_metadata": {
+      "issuer": "Bundesdruckerei GmbH",
+      "issuer_id": "https://pid.bundesdruckerei.de",
+      "wallet_provider": "sprind",
+      "credential_type": "PID",
+      "credential_format": "vc+sd-jwt",
+      "assurance_level": "high",
+      "presentation_id": "vp-a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "issuing_country": "DE",
+      "verified_at": "2026-05-08T09:28:47Z",
+      "expires_at": "2031-05-08T00:00:00Z"
+    },
+    "address": {
+      "street": "Friedrichstr. 55",
+      "zip": "10117",
+      "city": "Berlin",
+      "country": "DE"
+    }
+  },
+  "landlord": {
+    "name": "Vonovia SE",
+    "type": "COMMERCIAL",
+    "iban": "DE89370400440532013000"
+  },
+  "property": {
+    "address": {
+      "street": "Kastanienallee 22",
+      "zip": "10435",
+      "city": "Berlin",
+      "country": "DE"
+    },
+    "unit_id": "2.OG-Mitte"
+  },
+  "deposit": {
+    "amount": 2100.00,
+    "currency": "EUR",
+    "type": "CASH_EQUIVALENT",
+    "lifecycle_state": "IDENTIFIED",
+    "history": [
+      { "state": "REQUESTED", "timestamp": "2026-05-08T09:00:00Z", "actor": "TENANT" },
+      {
+        "state": "IDENTIFIED",
+        "timestamp": "2026-05-08T09:30:00Z",
+        "actor": "TENANT",
+        "comment": "Identity verified via EUDI Wallet PID presentation (SD-JWT VC, LoA high)"
+      }
+    ]
+  },
+  "provider": {
+    "provider_type": "FINTECH_PLATFORM",
+    "executing_entity": "Instabank ASA",
+    "brand_name": "Smartmiete"
+  }
+}

@@ -35,13 +35,27 @@ type Meta struct {
 	ExternalID string    `json:"external_id,omitempty"`
 }
 
+type WalletMetadata struct {
+	Issuer           string `json:"issuer,omitempty"`
+	IssuerID         string `json:"issuer_id,omitempty"`
+	WalletProvider   string `json:"wallet_provider,omitempty"`
+	CredentialType   string `json:"credential_type,omitempty"`
+	CredentialFormat string `json:"credential_format,omitempty"`
+	AssuranceLevel   string `json:"assurance_level,omitempty"`
+	PresentationID   string `json:"presentation_id,omitempty"`
+	IssuingCountry   string `json:"issuing_country,omitempty"`
+	VerifiedAt       string `json:"verified_at,omitempty"`
+	ExpiresAt        string `json:"expires_at,omitempty"`
+}
+
 type Tenant struct {
-	FirstName string  `json:"first_name"`
-	LastName  string  `json:"last_name"`
-	Email     string  `json:"email"`
-	TaxID     string  `json:"tax_id,omitempty"`
-	EIDStatus string  `json:"eid_status"`
-	Address   Address `json:"address"`
+	FirstName      string          `json:"first_name"`
+	LastName       string          `json:"last_name"`
+	Email          string          `json:"email"`
+	TaxID          string          `json:"tax_id,omitempty"`
+	EIDStatus      string          `json:"eid_status"`
+	WalletMetadata *WalletMetadata `json:"wallet_metadata,omitempty"`
+	Address        Address         `json:"address"`
 }
 
 type Address struct {

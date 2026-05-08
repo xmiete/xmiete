@@ -18,6 +18,7 @@ package org.xmiete.sdk.models;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public record Deposit(
     Meta meta,
@@ -32,12 +33,26 @@ public record Deposit(
 
 record Meta(String version, OffsetDateTime timestamp, String externalId) {}
 
+record WalletMetadata(
+    String issuer,
+    String issuerId,
+    String walletProvider,
+    String credentialType,
+    String credentialFormat,
+    String assuranceLevel,
+    String presentationId,
+    String issuingCountry,
+    OffsetDateTime verifiedAt,
+    OffsetDateTime expiresAt
+) {}
+
 record Tenant(
     String firstName,
     String lastName,
     String email,
     String taxId,
     String eidStatus,
+    WalletMetadata walletMetadata,
     Address address
 ) {}
 

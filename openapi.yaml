@@ -62,6 +62,13 @@ paths:
                 eid_status:
                   type: string
                   enum: [VERIFIED, FAILED]
+                verification_timestamp:
+                  type: string
+                  format: date-time
+                provider_reference:
+                  type: string
+                wallet_metadata:
+                  $ref: '#/components/schemas/WalletMetadata'
       responses:
         '200':
           description: Updated
@@ -125,6 +132,47 @@ paths:
         '200':
           description: Claimed
 components:
+  schemas:
+    WalletMetadata:
+      type: object
+      description: eIDAS 2.0 / EUDI-Wallet credential metadata for tenant identity verification.
+      properties:
+        issuer:
+          type: string
+          description: Human-readable name of the credential issuer.
+        issuer_id:
+          type: string
+          description: URI or DID identifying the credential issuer.
+        wallet_provider:
+          type: string
+          description: Identifier of the EUDI Wallet provider app.
+        credential_type:
+          type: string
+          enum: [PID, EAA, QEAA, MDL]
+          description: EUDI credential type.
+        credential_format:
+          type: string
+          enum: [vc+sd-jwt, mso_mdoc, ldp_vc]
+          description: Credential encoding format per OpenID4VCI / EUDI ARF.
+        assurance_level:
+          type: string
+          enum: [low, substantial, high]
+          description: eIDAS Level of Assurance per Article 8.
+        presentation_id:
+          type: string
+          description: Opaque reference to the Verifiable Presentation.
+        issuing_country:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          description: ISO 3166-1 alpha-2 country code of the credential issuer.
+        verified_at:
+          type: string
+          format: date-time
+          description: Timestamp when the EUDI Wallet presentation was verified.
+        expires_at:
+          type: string
+          format: date-time
+          description: Expiry timestamp of the wallet credential.
   securitySchemes:
     BearerAuth:
       type: http

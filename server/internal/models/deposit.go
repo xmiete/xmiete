@@ -38,13 +38,28 @@ type Address struct {
 	Country string `json:"country"`
 }
 
+// WalletMetadata holds eIDAS 2.0 / EUDI-Wallet credential details from a VP presentation.
+type WalletMetadata struct {
+	Issuer          string `json:"issuer,omitempty"`
+	IssuerID        string `json:"issuer_id,omitempty"`
+	WalletProvider  string `json:"wallet_provider,omitempty"`
+	CredentialType  string `json:"credential_type,omitempty"`
+	CredentialFormat string `json:"credential_format,omitempty"`
+	AssuranceLevel  string `json:"assurance_level,omitempty"`
+	PresentationID  string `json:"presentation_id,omitempty"`
+	IssuingCountry  string `json:"issuing_country,omitempty"`
+	VerifiedAt      string `json:"verified_at,omitempty"`
+	ExpiresAt       string `json:"expires_at,omitempty"`
+}
+
 type Tenant struct {
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Email     string    `json:"email"`
-	TaxID     string    `json:"tax_id,omitempty"`
-	EIDStatus EIDStatus `json:"eid_status,omitempty"`
-	Address   *Address  `json:"address,omitempty"`
+	FirstName      string          `json:"first_name"`
+	LastName       string          `json:"last_name"`
+	Email          string          `json:"email"`
+	TaxID          string          `json:"tax_id,omitempty"`
+	EIDStatus      EIDStatus       `json:"eid_status,omitempty"`
+	WalletMetadata *WalletMetadata `json:"wallet_metadata,omitempty"`
+	Address        *Address        `json:"address,omitempty"`
 }
 
 type Landlord struct {
@@ -109,9 +124,10 @@ type Deposit struct {
 // Request/response payloads for action endpoints.
 
 type IdentityUpdateRequest struct {
-	EIDStatus             EIDStatus `json:"eid_status"`
-	VerificationTimestamp string    `json:"verification_timestamp,omitempty"`
-	ProviderReference     string    `json:"provider_reference,omitempty"`
+	EIDStatus             EIDStatus       `json:"eid_status"`
+	VerificationTimestamp string          `json:"verification_timestamp,omitempty"`
+	ProviderReference     string          `json:"provider_reference,omitempty"`
+	WalletMetadata        *WalletMetadata `json:"wallet_metadata,omitempty"`
 }
 
 type PledgeRequest struct {

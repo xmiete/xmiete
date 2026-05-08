@@ -37,12 +37,27 @@ pub struct Meta {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WalletMetadata {
+    pub issuer: Option<String>,
+    pub issuer_id: Option<String>,
+    pub wallet_provider: Option<String>,
+    pub credential_type: Option<String>,
+    pub credential_format: Option<String>,
+    pub assurance_level: Option<String>,
+    pub presentation_id: Option<String>,
+    pub issuing_country: Option<String>,
+    pub verified_at: Option<DateTime<Utc>>,
+    pub expires_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Tenant {
     pub first_name: String,
     pub last_name: String,
     pub email: String,
     pub tax_id: Option<String>,
     pub eid_status: String,
+    pub wallet_metadata: Option<WalletMetadata>,
     pub address: Address,
 }
 
