@@ -21,10 +21,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/xmiete/server/internal/api"
 	"github.com/xmiete/server/internal/db"
+	"github.com/xmiete/server/internal/mailer"
 )
 
 func main() {
@@ -43,7 +45,8 @@ func main() {
 	}
 	defer repo.Close()
 
-	srv := api.NewServer(repo, webhookURL, issuerURL)
+	m := buildMailer()
+	srv := api.NewServer(repo, webhookURL, issuerURL, m)
 	router := api.NewRouter(srv, jwtSecret)
 
 	addr := fmt.Sprintf(":%s", port)
@@ -59,6 +62,27 @@ func main() {
 	if err := httpSrv.ListenAndServe(); err != nil {
 		log.Fatalf("server: %v", err)
 	}
+}
+
+// buildMailer returns an SMTP mailer when SMTP_HOST is set, otherwise a no-op.
+func buildMailer() mailer.Mailer {
+	host := os.Getenv("SMTP_HOST")
+	if host == "" {
+		log.Println("SMTP_HOST not set — receipt emails disabled")
+		return mailer.NoOp{}
+	}
+	port := 587
+	if p := os.Getenv("SMTP_PORT"); p != "" {
+		if n, err := strconv.Atoi(p); err == nil {
+			port = n
+		}
+	}
+	return mailer.NewSMTPMailer(
+		host, port,
+		os.Getenv("SMTP_USERNAME"),
+		os.Getenv("SMTP_PASSWORD"),
+		envOrDefault("SMTP_FROM", "noreply@xmiete.org"),
+	)
 }
 
 func mustEnv(key string) string {

@@ -19,13 +19,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
+
+	"log"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/xmiete/server/internal/db"
 	"github.com/xmiete/server/internal/issuance"
+	"github.com/xmiete/server/internal/mailer"
 	"github.com/xmiete/server/internal/models"
+	"github.com/xmiete/server/internal/receipt"
 	"github.com/xmiete/server/internal/statemachine"
 	"github.com/xmiete/server/internal/verification"
 )
@@ -36,15 +41,17 @@ type Server struct {
 	sessions   *issuance.Store
 	vpSessions *verification.Store
 	issuerURL  string // base URL for OID4VCI endpoints, e.g. https://api.xmiete.org
+	mailer     mailer.Mailer
 }
 
-func NewServer(repo db.Repository, webhookURL, issuerURL string) *Server {
+func NewServer(repo db.Repository, webhookURL, issuerURL string, m mailer.Mailer) *Server {
 	return &Server{
 		repo:       repo,
 		webhookURL: webhookURL,
 		sessions:   issuance.NewStore(),
 		vpSessions: verification.NewStore(),
 		issuerURL:  issuerURL,
+		mailer:     m,
 	}
 }
 
@@ -192,6 +199,7 @@ func (s *Server) Pledge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.fireWebhook(updated)
+	s.sendReceiptEmail(updated)
 	writeJSON(w, http.StatusOK, updated)
 }
 
@@ -271,6 +279,59 @@ func (s *Server) Claim(w http.ResponseWriter, r *http.Request) {
 
 	s.fireWebhook(updated)
 	writeJSON(w, http.StatusOK, updated)
+}
+
+// GET /deposits/{id}/receipt
+// Returns a PDF receipt (Kautionsquittung) for the deposit.
+// Only available once the deposit is PLEDGED (is_confirmed_by_bank = true).
+// PDF is generated on demand — serves as the fallback delivery path for
+// tenants who do not yet have an EUDI wallet to receive the QEAA credential.
+func (s *Server) GetReceipt(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	d, err := s.repo.GetByID(r.Context(), id)
+	if errors.Is(err, db.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "deposit not found", "NOT_FOUND")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to fetch deposit", "INTERNAL_ERROR")
+		return
+	}
+
+	switch d.Deposit.LifecycleState {
+	case models.StatePledged, models.StateReleased, models.StateClaimed, models.StateClosed:
+		// receipt available
+	default:
+		writeError(w, http.StatusConflict,
+			fmt.Sprintf("receipt not available in state %s — deposit must be PLEDGED first", d.Deposit.LifecycleState),
+			"RECEIPT_NOT_AVAILABLE")
+		return
+	}
+
+	pdfBytes, err := receipt.Generate(d)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to generate receipt", "INTERNAL_ERROR")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="receipt-%s.pdf"`, id))
+	w.WriteHeader(http.StatusOK)
+	w.Write(pdfBytes) //nolint:errcheck
+}
+
+// sendReceiptEmail generates a PDF receipt and emails it to the tenant asynchronously.
+func (s *Server) sendReceiptEmail(d *models.Deposit) {
+	go func() {
+		pdf, err := receipt.Generate(d)
+		if err != nil {
+			log.Printf("receipt generate deposit=%s: %v", d.ID, err)
+			return
+		}
+		if err := s.mailer.SendReceipt(d, pdf); err != nil {
+			log.Printf("receipt email deposit=%s to=%s: %v", d.ID, d.Tenant.Email, err)
+		}
+	}()
 }
 
 // fireWebhook posts a state-change event to s.webhookURL asynchronously.
