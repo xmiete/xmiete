@@ -234,6 +234,7 @@ func (s *Server) Release(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.fireWebhook(updated)
+	s.sendReleaseReceiptEmail(updated)
 	writeJSON(w, http.StatusOK, updated)
 }
 
@@ -320,6 +321,43 @@ func (s *Server) GetReceipt(w http.ResponseWriter, r *http.Request) {
 	w.Write(pdfBytes) //nolint:errcheck
 }
 
+// GET /deposits/{id}/release-receipt
+// Returns a PDF release confirmation (Kautionsfreigabe) for the deposit.
+// Only available once the deposit is RELEASED or CLOSED.
+func (s *Server) GetReleaseReceipt(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	d, err := s.repo.GetByID(r.Context(), id)
+	if errors.Is(err, db.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "deposit not found", "NOT_FOUND")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to fetch deposit", "INTERNAL_ERROR")
+		return
+	}
+
+	switch d.Deposit.LifecycleState {
+	case models.StateReleased, models.StateClosed:
+		// release receipt available
+	default:
+		writeError(w, http.StatusConflict,
+			fmt.Sprintf("release receipt not available in state %s — deposit must be RELEASED first", d.Deposit.LifecycleState),
+			"RELEASE_RECEIPT_NOT_AVAILABLE")
+		return
+	}
+
+	pdfBytes, err := receipt.GenerateReleaseReceipt(d)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to generate release receipt", "INTERNAL_ERROR")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="release-receipt-%s.pdf"`, id))
+	w.WriteHeader(http.StatusOK)
+	w.Write(pdfBytes) //nolint:errcheck
+}
+
 // sendReceiptEmail generates a PDF receipt and emails it to the tenant asynchronously.
 func (s *Server) sendReceiptEmail(d *models.Deposit) {
 	go func() {
@@ -330,6 +368,20 @@ func (s *Server) sendReceiptEmail(d *models.Deposit) {
 		}
 		if err := s.mailer.SendReceipt(d, pdf); err != nil {
 			log.Printf("receipt email deposit=%s to=%s: %v", d.ID, d.Tenant.Email, err)
+		}
+	}()
+}
+
+// sendReleaseReceiptEmail generates a PDF release confirmation and emails it to the tenant asynchronously.
+func (s *Server) sendReleaseReceiptEmail(d *models.Deposit) {
+	go func() {
+		pdf, err := receipt.GenerateReleaseReceipt(d)
+		if err != nil {
+			log.Printf("release receipt generate deposit=%s: %v", d.ID, err)
+			return
+		}
+		if err := s.mailer.SendReleaseReceipt(d, pdf); err != nil {
+			log.Printf("release receipt email deposit=%s to=%s: %v", d.ID, d.Tenant.Email, err)
 		}
 	}()
 }

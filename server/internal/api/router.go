@@ -61,6 +61,8 @@ func NewRouter(s *Server, jwtSecret string) http.Handler {
 
 			// PDF receipt — fallback for tenants without an EUDI wallet (available from PLEDGED onwards)
 			r.Get("/deposits/{id}/receipt", s.GetReceipt)
+			// PDF release confirmation — sent on RELEASED, also available on demand
+			r.Get("/deposits/{id}/release-receipt", s.GetReleaseReceipt)
 
 			// QEAA issuance trigger — called by bank after pledge
 			r.Post("/deposits/{id}/issue-credential", s.IssueCredential)

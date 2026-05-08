@@ -62,6 +62,31 @@ func (m *SMTPMailer) SendReceipt(d *models.Deposit, pdf []byte) error {
 	return m.dialer.DialAndSend(msg)
 }
 
+func (m *SMTPMailer) SendReleaseReceipt(d *models.Deposit, pdf []byte) error {
+	subject := fmt.Sprintf("Your rental deposit has been released — %s %s", d.Property.Address.Street, d.Property.Address.City)
+
+	body, err := renderReleaseBody(d)
+	if err != nil {
+		return fmt.Errorf("render release email body: %w", err)
+	}
+
+	msg := gomail.NewMessage()
+	msg.SetHeader("From", m.from)
+	msg.SetHeader("To", d.Tenant.Email)
+	msg.SetHeader("Subject", subject)
+	msg.SetBody("text/plain", body)
+
+	filename := fmt.Sprintf("release-receipt-%s.pdf", d.ID)
+	msg.Attach(filename,
+		gomail.SetCopyFunc(func(w io.Writer) error {
+			_, err := w.Write(pdf)
+			return err
+		}),
+	)
+
+	return m.dialer.DialAndSend(msg)
+}
+
 var bodyTmpl = template.Must(template.New("receipt").Parse(`Dear {{ .Tenant.FirstName }} {{ .Tenant.LastName }},
 
 Please find attached the receipt for your rental deposit at {{ .Property.Address.Street }}, {{ .Property.Address.ZIP }} {{ .Property.Address.City }}.
@@ -86,6 +111,29 @@ XMiete
 func renderBody(d *models.Deposit) (string, error) {
 	var buf bytes.Buffer
 	if err := bodyTmpl.Execute(&buf, d); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+var releaseBodyTmpl = template.Must(template.New("release").Parse(`Dear {{ .Tenant.FirstName }} {{ .Tenant.LastName }},
+
+Your rental deposit for {{ .Property.Address.Street }}, {{ .Property.Address.ZIP }} {{ .Property.Address.City }} has been released by your landlord.
+
+Deposit amount:  {{ printf "%.2f" .Deposit.Amount }} {{ .Deposit.Currency }}
+{{ if .Pledge -}}
+Originally pledged: {{ .Pledge.PledgeDate }}
+{{ end -}}
+
+Please find the release confirmation attached. The funds will be returned to you according to your bank's processing times.
+
+Best regards,
+XMiete
+`))
+
+func renderReleaseBody(d *models.Deposit) (string, error) {
+	var buf bytes.Buffer
+	if err := releaseBodyTmpl.Execute(&buf, d); err != nil {
 		return "", err
 	}
 	return buf.String(), nil

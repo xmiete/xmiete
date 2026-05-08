@@ -17,12 +17,14 @@ package mailer
 
 import "github.com/xmiete/server/internal/models"
 
-// Mailer sends the deposit receipt PDF to the tenant by email.
+// Mailer sends deposit PDF documents to the tenant by email.
 type Mailer interface {
 	SendReceipt(d *models.Deposit, pdf []byte) error
+	SendReleaseReceipt(d *models.Deposit, pdf []byte) error
 }
 
 // NoOp is used when no SMTP config is provided (e.g. dev/test environments).
 type NoOp struct{}
 
-func (NoOp) SendReceipt(_ *models.Deposit, _ []byte) error { return nil }
+func (NoOp) SendReceipt(_ *models.Deposit, _ []byte) error        { return nil }
+func (NoOp) SendReleaseReceipt(_ *models.Deposit, _ []byte) error { return nil }
