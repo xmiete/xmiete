@@ -111,7 +111,7 @@ pub struct DepositDetails {
 pub struct Pledge {
     pub pledge_date: Option<NaiveDate>,
     pub statutory_basis: String,
-    pub is_confirmed_by_bank: bool,
+    pub is_confirmed_by_bank: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -128,7 +128,7 @@ pub struct Trusteeship {
     pub account_type: Option<String>,
     pub trustee_entity: Option<String>,
     pub trust_account_iban: Option<String>,
-    pub insolvency_protection_confirmed: bool,
+    pub insolvency_protection_confirmed: Option<bool>,
     pub insolvency_protection_confirmed_date: Option<NaiveDate>,
     pub statutory_basis: Option<String>,
     pub interest_rate: Option<f64>,

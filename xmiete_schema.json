@@ -131,7 +131,7 @@
       "properties": {
         "pledge_date": { "type": "string", "format": "date" },
         "statutory_basis": { "type": "string", "default": "BGB § 551" },
-        "is_confirmed_by_bank": { "type": "boolean", "default": false }
+        "is_confirmed_by_bank": { "type": "boolean", "description": "Omit when unknown; false means explicitly not confirmed." }
       }
     },
     "trusteeship": {
@@ -154,8 +154,7 @@
         },
         "insolvency_protection_confirmed": {
           "type": "boolean",
-          "default": false,
-          "description": "Bank-confirmed insolvency-proof separation (insolvenzfeste Trennung) per BGB § 551 Abs. 3."
+          "description": "Bank-confirmed insolvency-proof separation (insolvenzfeste Trennung) per BGB § 551 Abs. 3. Omit when unknown; false means explicitly not confirmed."
         },
         "insolvency_protection_confirmed_date": {
           "type": "string",
