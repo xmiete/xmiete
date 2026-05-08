@@ -110,6 +110,9 @@ func (s *Server) UpdateIdentity(w http.ResponseWriter, r *http.Request) {
 	entry := models.HistoryEntry{State: nextState, Actor: "IDENTITY_PROVIDER"}
 	updated, err := s.repo.UpdateState(r.Context(), id, nextState, entry, func(d *models.Deposit) {
 		d.Tenant.EIDStatus = req.EIDStatus
+		if req.WalletMetadata != nil {
+			d.Tenant.WalletMetadata = req.WalletMetadata
+		}
 	})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to update deposit", "INTERNAL_ERROR")

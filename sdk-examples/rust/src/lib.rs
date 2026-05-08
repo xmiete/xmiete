@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+pub mod eid;
 pub mod models;
 
 use async_trait::async_trait;
