@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+pub mod auth;
 pub mod eid;
 pub mod models;
 pub mod openid4vp;
