@@ -27,6 +27,7 @@ public record Deposit(
     Property property,
     DepositDetails depositDetails,
     Pledge pledge,
+    Trusteeship trusteeship,
     Provider provider,
     List<HistoryEntry> history
 ) {}
@@ -70,6 +71,17 @@ record DepositDetails(
 ) {}
 
 record Pledge(String pledgeDate, String legalReference, boolean isConfirmedByBank) {}
+
+/** BGB § 551 Abs. 3 — insolvency-proof separation of deposit funds from the landlord's estate. */
+record Trusteeship(
+    boolean isTreuhand,
+    String accountType,        // TREUHANDKONTO | ANDERKONTO | POOLED_TREUHAND
+    String trusteeEntity,
+    String trustAccountIban,
+    boolean insolvencyProtectionConfirmed,
+    String insolvencyProtectionConfirmedDate,
+    String legalBasis
+) {}
 
 record Provider(
     String providerType,

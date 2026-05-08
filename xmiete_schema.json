@@ -102,6 +102,46 @@
         "is_confirmed_by_bank": { "type": "boolean", "default": false }
       }
     },
+    "trusteeship": {
+      "type": "object",
+      "description": "Treuhand configuration per BGB § 551 Abs. 3 — insolvency-proof separation of deposit funds from the landlord's own assets.",
+      "properties": {
+        "is_treuhand": {
+          "type": "boolean",
+          "default": false,
+          "description": "Flags the deposit as held in a legally separated trust account (Treuhandkonto) per BGB § 551 Abs. 3."
+        },
+        "account_type": {
+          "type": "string",
+          "enum": ["TREUHANDKONTO", "ANDERKONTO", "POOLED_TREUHAND"],
+          "description": "Type of trust account structure. TREUHANDKONTO: standard segregated account. ANDERKONTO: restricted to licensed professionals (lawyers, notaries). POOLED_TREUHAND: multiple tenant deposits in one designated account with per-tenant sub-accounting."
+        },
+        "trustee_entity": {
+          "type": "string",
+          "description": "Full legal name of the trustee (Treuhänder) holding the funds — typically the bank or a licensed Hausverwaltung."
+        },
+        "trust_account_iban": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$",
+          "description": "IBAN of the designated trust account, strictly separate from the landlord's own IBAN."
+        },
+        "insolvency_protection_confirmed": {
+          "type": "boolean",
+          "default": false,
+          "description": "Bank-confirmed insolvency-proof separation (insolvenzfeste Trennung) per BGB § 551 Abs. 3."
+        },
+        "insolvency_protection_confirmed_date": {
+          "type": "string",
+          "format": "date",
+          "description": "ISO 8601 date on which the bank confirmed insolvency-proof separation."
+        },
+        "legal_basis": {
+          "type": "string",
+          "default": "BGB § 551 Abs. 3",
+          "description": "Statutory basis for the trust arrangement."
+        }
+      }
+    },
     "provider": {
       "type": "object",
       "description": "Information about the bank, insurer, or fintech platform providing the deposit.",

@@ -48,6 +48,15 @@
     "legal_reference": "BGB § 551",
     "is_confirmed_by_bank": true
   },
+  "trusteeship": {
+    "is_treuhand": true,
+    "account_type": "TREUHANDKONTO",
+    "trustee_entity": "Aareal Bank AG",
+    "trust_account_iban": "DE87200700240085978700",
+    "insolvency_protection_confirmed": true,
+    "insolvency_protection_confirmed_date": "2026-05-07",
+    "legal_basis": "BGB § 551 Abs. 3"
+  },
   "provider": {
     "provider_type": "BANK_SYSTEM_PARTNER",
     "executing_entity": "Aareal Bank AG",

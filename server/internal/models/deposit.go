@@ -110,6 +110,26 @@ type Pledge struct {
 	IsConfirmedByBank bool   `json:"is_confirmed_by_bank"`
 }
 
+type TrustAccountType string
+
+const (
+	TrustAccountTreuhandkonto TrustAccountType = "TREUHANDKONTO"
+	TrustAccountAnderkonto    TrustAccountType = "ANDERKONTO"
+	TrustAccountPooled        TrustAccountType = "POOLED_TREUHAND"
+)
+
+// Trusteeship models the BGB § 551 Abs. 3 requirement that deposit funds are held
+// in a legally separated trust account (Treuhandkonto), insolvency-proof from the landlord.
+type Trusteeship struct {
+	IsTreuhand                        bool             `json:"is_treuhand"`
+	AccountType                       TrustAccountType `json:"account_type,omitempty"`
+	TrusteeEntity                     string           `json:"trustee_entity,omitempty"`
+	TrustAccountIBAN                  string           `json:"trust_account_iban,omitempty"`
+	InsolvencyProtectionConfirmed     bool             `json:"insolvency_protection_confirmed"`
+	InsolvencyProtectionConfirmedDate string           `json:"insolvency_protection_confirmed_date,omitempty"`
+	LegalBasis                        string           `json:"legal_basis,omitempty"`
+}
+
 type Provider struct {
 	ProviderType          string `json:"provider_type"`
 	ExecutingEntity       string `json:"executing_entity"`
@@ -179,15 +199,16 @@ type Transport struct {
 
 // Deposit is the top-level domain object, mirroring xmiete_schema.json.
 type Deposit struct {
-	ID        string      `json:"id"`
-	Meta      Meta        `json:"meta"`
-	Tenant    Tenant      `json:"tenant"`
-	Landlord  Landlord    `json:"landlord"`
-	Property  Property    `json:"property"`
-	Deposit   DepositData `json:"deposit"`
-	Pledge    *Pledge     `json:"pledge,omitempty"`
-	Provider  *Provider   `json:"provider,omitempty"`
-	Transport *Transport  `json:"transport,omitempty"`
+	ID          string       `json:"id"`
+	Meta        Meta         `json:"meta"`
+	Tenant      Tenant       `json:"tenant"`
+	Landlord    Landlord     `json:"landlord"`
+	Property    Property     `json:"property"`
+	Deposit     DepositData  `json:"deposit"`
+	Pledge      *Pledge      `json:"pledge,omitempty"`
+	Trusteeship *Trusteeship `json:"trusteeship,omitempty"`
+	Provider    *Provider    `json:"provider,omitempty"`
+	Transport   *Transport   `json:"transport,omitempty"`
 }
 
 // Request/response payloads for action endpoints.
