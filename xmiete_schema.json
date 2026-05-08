@@ -111,17 +111,38 @@
           "type": "string",
           "enum": ["BANK_SYSTEM_PARTNER", "INSURANCE_BROKER", "DIRECT_BANK", "FINTECH_PLATFORM"]
         },
-        "executing_entity": { 
-          "type": "string", 
+        "executing_entity": {
+          "type": "string",
           "description": "The legal entity holding the funds or issuing the guarantee (e.g., Aareal Bank, Volksbank, Instabank)."
         },
-        "brand_name": { 
-          "type": "string", 
+        "brand_name": {
+          "type": "string",
           "description": "The brand or platform name facing the user (e.g., GetMomo, PlusForta, Smartmiete)."
         },
         "provider_id": { "type": "string", "description": "Internal identifier for the provider" },
         "insurance_policy_number": { "type": "string" },
         "custom_fields": { "type": "object" }
+      }
+    },
+    "transport": {
+      "type": "object",
+      "description": "Transport protocol configuration for bank-system communication. Defaults to REST; set protocol to EBICS for banks that use EBICS infrastructure.",
+      "required": ["protocol"],
+      "properties": {
+        "protocol": {
+          "type": "string",
+          "enum": ["REST", "EBICS"],
+          "default": "REST",
+          "description": "Transport protocol used to exchange XMiete messages with the bank system."
+        },
+        "ebics_metadata": { "$ref": "#/definitions/ebics_metadata" }
+      },
+      "if": {
+        "properties": { "protocol": { "const": "EBICS" } },
+        "required": ["protocol"]
+      },
+      "then": {
+        "required": ["ebics_metadata"]
       }
     }
   },
@@ -271,6 +292,84 @@
           "type": "string",
           "format": "uri",
           "description": "URL at which verifiers can check the current status (active/revoked) of this credential."
+        }
+      }
+    },
+    "ebics_btf": {
+      "type": "object",
+      "description": "EBICS 3.0 Business Transaction Format (BTF) — replaces order types from EBICS 2.x.",
+      "required": ["service_name", "msg_name"],
+      "properties": {
+        "service_name": {
+          "type": "string",
+          "description": "BTF service name (e.g., 'MCT' for SEPA Credit Transfer, 'STM' for statement/camt)."
+        },
+        "service_option": {
+          "type": "string",
+          "description": "Optional BTF service option qualifier (bank-specific)."
+        },
+        "scope": {
+          "type": "string",
+          "description": "BTF scope / country or region code (e.g., 'DE', 'EU')."
+        },
+        "container": {
+          "type": "string",
+          "enum": ["XML", "ZIP", "ZIP.b64"],
+          "description": "BTF container format."
+        },
+        "msg_name": {
+          "type": "string",
+          "description": "ISO 20022 message name (e.g., 'pain.001', 'camt.054')."
+        },
+        "msg_version": {
+          "type": "string",
+          "description": "ISO 20022 message version suffix (e.g., '03', '08')."
+        }
+      }
+    },
+    "ebics_metadata": {
+      "type": "object",
+      "description": "EBICS connection parameters. Required when transport.protocol is EBICS.",
+      "required": ["host_id", "partner_id", "user_id", "ebics_version", "bank_url"],
+      "properties": {
+        "host_id": {
+          "type": "string",
+          "description": "EBICS Host ID configured at the bank (e.g., 'AAREAL01')."
+        },
+        "partner_id": {
+          "type": "string",
+          "description": "EBICS Partner ID (Kundennummer assigned by the bank to the XMiete system operator)."
+        },
+        "user_id": {
+          "type": "string",
+          "description": "EBICS User ID (technical user for the XMiete system)."
+        },
+        "ebics_version": {
+          "type": "string",
+          "enum": ["2.4", "2.5", "3.0"],
+          "description": "EBICS protocol version. Use 3.0 for BTF-based order routing; 2.4/2.5 for legacy order types."
+        },
+        "bank_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "HTTPS URL of the bank's EBICS server endpoint."
+        },
+        "order_type": {
+          "type": "string",
+          "description": "EBICS 2.x three-letter order type (e.g., 'CCT' for SEPA Credit Transfer, 'C54' for camt.054). Not used with EBICS 3.0; use btf instead."
+        },
+        "btf": {
+          "$ref": "#/definitions/ebics_btf"
+        },
+        "signature_class": {
+          "type": "string",
+          "enum": ["T", "E", "A"],
+          "description": "EBICS signature class: T (transport only), E (electronic/single), A (authorization/collective)."
+        },
+        "bank_bic": {
+          "type": "string",
+          "pattern": "^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$",
+          "description": "BIC of the bank (ISO 9362)."
         }
       }
     },

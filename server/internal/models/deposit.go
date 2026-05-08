@@ -109,16 +109,70 @@ type Meta struct {
 	ExternalID string    `json:"external_id,omitempty"`
 }
 
+type TransportProtocol string
+
+const (
+	TransportREST  TransportProtocol = "REST"
+	TransportEBICS TransportProtocol = "EBICS"
+)
+
+type EBICSVersion string
+
+const (
+	EBICS24 EBICSVersion = "2.4"
+	EBICS25 EBICSVersion = "2.5"
+	EBICS30 EBICSVersion = "3.0"
+)
+
+type EBICSSignatureClass string
+
+const (
+	EBICSSignatureT EBICSSignatureClass = "T" // transport only
+	EBICSSignatureE EBICSSignatureClass = "E" // electronic / single signature
+	EBICSSignatureA EBICSSignatureClass = "A" // authorization / collective signature
+)
+
+// EBICSBTF is the EBICS 3.0 Business Transaction Format descriptor (replaces order types).
+type EBICSBTF struct {
+	ServiceName   string `json:"service_name"`
+	ServiceOption string `json:"service_option,omitempty"`
+	Scope         string `json:"scope,omitempty"`
+	Container     string `json:"container,omitempty"`
+	MsgName       string `json:"msg_name"`
+	MsgVersion    string `json:"msg_version,omitempty"`
+}
+
+// EBICSMetadata holds the EBICS connection parameters for a bank integration.
+type EBICSMetadata struct {
+	HostID         string              `json:"host_id"`
+	PartnerID      string              `json:"partner_id"`
+	UserID         string              `json:"user_id"`
+	EBICSVersion   EBICSVersion        `json:"ebics_version"`
+	BankURL        string              `json:"bank_url"`
+	OrderType      string              `json:"order_type,omitempty"`
+	BTF            *EBICSBTF           `json:"btf,omitempty"`
+	SignatureClass EBICSSignatureClass `json:"signature_class,omitempty"`
+	BankBIC        string              `json:"bank_bic,omitempty"`
+}
+
+// Transport declares how XMiete messages are exchanged with the bank system.
+// Defaults to REST; set Protocol to EBICS and populate EBICSMetadata for EBICS-connected banks.
+type Transport struct {
+	Protocol      TransportProtocol `json:"protocol"`
+	EBICSMetadata *EBICSMetadata    `json:"ebics_metadata,omitempty"`
+}
+
 // Deposit is the top-level domain object, mirroring xmiete_schema.json.
 type Deposit struct {
-	ID       string      `json:"id"`
-	Meta     Meta        `json:"meta"`
-	Tenant   Tenant      `json:"tenant"`
-	Landlord Landlord    `json:"landlord"`
-	Property Property    `json:"property"`
-	Deposit  DepositData `json:"deposit"`
-	Pledge   *Pledge     `json:"pledge,omitempty"`
-	Provider *Provider   `json:"provider,omitempty"`
+	ID        string      `json:"id"`
+	Meta      Meta        `json:"meta"`
+	Tenant    Tenant      `json:"tenant"`
+	Landlord  Landlord    `json:"landlord"`
+	Property  Property    `json:"property"`
+	Deposit   DepositData `json:"deposit"`
+	Pledge    *Pledge     `json:"pledge,omitempty"`
+	Provider  *Provider   `json:"provider,omitempty"`
+	Transport *Transport  `json:"transport,omitempty"`
 }
 
 // Request/response payloads for action endpoints.
