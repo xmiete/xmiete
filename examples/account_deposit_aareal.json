@@ -37,11 +37,20 @@
     "type": "CASH_EQUIVALENT",
     "lifecycle_state": "PLEDGED",
     "history": [
-      { "state": "REQUESTED", "timestamp": "2026-05-07T08:00:00Z", "actor": "TENANT" },
+      { "state": "REQUESTED",  "timestamp": "2026-05-07T08:00:00Z", "actor": "TENANT" },
       { "state": "IDENTIFIED", "timestamp": "2026-05-07T08:30:00Z", "actor": "TENANT", "comment": "eID verified" },
-      { "state": "FUNDED", "timestamp": "2026-05-07T09:15:00Z", "actor": "BANK", "comment": "Funds received" },
-      { "state": "PLEDGED", "timestamp": "2026-05-07T10:00:00Z", "actor": "BANK", "comment": "Legal pledge confirmed" }
-    ]
+      { "state": "FUNDED",     "timestamp": "2026-05-07T09:15:00Z", "actor": "BANK",   "comment": "All installments received" },
+      { "state": "PLEDGED",    "timestamp": "2026-05-07T10:00:00Z", "actor": "BANK",   "comment": "Legal pledge confirmed" }
+    ],
+    "installment_plan": {
+      "total_installments": 3,
+      "installment_amount": 500.00,
+      "schedule": [
+        { "installment_number": 1, "due_date": "2026-05-01", "paid_date": "2026-05-01", "amount": 500.00 },
+        { "installment_number": 2, "due_date": "2026-06-01", "paid_date": "2026-06-02", "amount": 500.00 },
+        { "installment_number": 3, "due_date": "2026-07-01", "paid_date": "2026-07-01", "amount": 500.00 }
+      ]
+    }
   },
   "pledge": {
     "pledge_date": "2026-05-07",
@@ -54,7 +63,15 @@
     "trust_account_iban": "DE87200700240085978700",
     "insolvency_protection_confirmed": true,
     "insolvency_protection_confirmed_date": "2026-05-07",
-    "statutory_basis": "BGB § 551 Abs. 3"
+    "statutory_basis": "BGB § 551 Abs. 3",
+    "interest_rate": 0.0150,
+    "interest_rate_history": [
+      { "rate": 0.0100, "effective_from": "2026-05-01", "effective_to": "2026-12-31" },
+      { "rate": 0.0150, "effective_from": "2027-01-01" }
+    ],
+    "accrued_interest": 8.63,
+    "interest_calculated_at": "2026-05-07T10:00:00Z",
+    "total_balance": 1508.63
   },
   "provider": {
     "provider_type": "BANK_SYSTEM_PARTNER",

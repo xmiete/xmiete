@@ -80,7 +80,7 @@
             "type": "object",
             "required": ["state", "timestamp"],
             "properties": {
-              "state": { 
+              "state": {
                 "type": "string",
                 "enum": ["REQUESTED", "IDENTIFIED", "FUNDED", "PLEDGED", "RELEASED", "CLAIMED", "CLOSED"]
               },
@@ -88,6 +88,38 @@
               "actor": { "type": "string", "description": "Entity that triggered the transition (e.g., TENANT, BANK, LANDLORD)" },
               "comment": { "type": "string" },
               "signature": { "type": "string", "description": "JWS (JSON Web Signature) for non-repudiation of critical transitions." }
+            }
+          }
+        },
+        "installment_plan": {
+          "type": "object",
+          "description": "Installment schedule when the tenant pays in tranches (BGB § 551 Abs. 2 allows up to 3). Each tranche accrues interest from its own paid_date, so schedule entries are the inputs to interest calculation.",
+          "properties": {
+            "total_installments": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3,
+              "default": 1,
+              "description": "Number of equal installments. BGB § 551 Abs. 2 permits up to 3."
+            },
+            "installment_amount": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Amount per installment (deposit.amount / total_installments)."
+            },
+            "schedule": {
+              "type": "array",
+              "description": "One entry per installment tranche.",
+              "items": {
+                "type": "object",
+                "required": ["installment_number", "due_date"],
+                "properties": {
+                  "installment_number": { "type": "integer", "minimum": 1 },
+                  "due_date": { "type": "string", "format": "date", "description": "Contractual due date for this tranche." },
+                  "paid_date": { "type": "string", "format": "date", "description": "Actual payment date — absent if not yet paid. Used as the interest accrual start date for this tranche." },
+                  "amount": { "type": "number", "minimum": 0, "description": "Actual amount paid for this tranche." }
+                }
+              }
             }
           }
         }
@@ -134,6 +166,38 @@
           "type": "string",
           "default": "BGB § 551 Abs. 3",
           "description": "Statutory basis for the trust arrangement."
+        },
+        "interest_rate": {
+          "type": "number",
+          "description": "Current annual interest rate as a decimal (e.g. 0.015 for 1.5%). Banks must provide this when trusteeship is active — required to fulfill BGB § 551 Abs. 3 (interest belongs to tenant)."
+        },
+        "interest_rate_history": {
+          "type": "array",
+          "description": "[Tenant transparency layer] Full history of rate changes, enabling tenants to independently verify accrued interest over the tenancy duration.",
+          "items": {
+            "type": "object",
+            "required": ["rate", "effective_from"],
+            "properties": {
+              "rate": { "type": "number" },
+              "effective_from": { "type": "string", "format": "date" },
+              "effective_to": { "type": "string", "format": "date", "description": "Absent if this is the current rate." }
+            }
+          }
+        },
+        "accrued_interest": {
+          "type": "number",
+          "minimum": 0,
+          "description": "[Tenant transparency layer] Bank-calculated interest accrued to date. Informational snapshot — bank account statement governs legally. See interest_calculated_at for snapshot timestamp."
+        },
+        "interest_calculated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "[Tenant transparency layer] Timestamp when accrued_interest and total_balance were last calculated by the bank."
+        },
+        "total_balance": {
+          "type": "number",
+          "minimum": 0,
+          "description": "[Tenant transparency layer] Principal + accrued_interest at interest_calculated_at. Represents the total amount the tenant is owed upon clean release."
         }
       }
     },

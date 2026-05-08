@@ -77,11 +77,25 @@ type Property struct {
 	UnitID  string  `json:"unit_id,omitempty"`
 }
 
+type InstallmentScheduleEntry struct {
+	InstallmentNumber int     `json:"installment_number"`
+	DueDate           string  `json:"due_date"`
+	PaidDate          string  `json:"paid_date,omitempty"`
+	Amount            float64 `json:"amount,omitempty"`
+}
+
+type InstallmentPlan struct {
+	TotalInstallments int                        `json:"total_installments"`
+	InstallmentAmount float64                    `json:"installment_amount,omitempty"`
+	Schedule          []InstallmentScheduleEntry `json:"schedule,omitempty"`
+}
+
 type DepositDetails struct {
-	Amount         float64 `json:"amount"`
-	Currency       string  `json:"currency"`
-	Type           string  `json:"type"`
-	LifecycleState string  `json:"lifecycle_state"`
+	Amount          float64          `json:"amount"`
+	Currency        string           `json:"currency"`
+	Type            string           `json:"type"`
+	LifecycleState  string           `json:"lifecycle_state"`
+	InstallmentPlan *InstallmentPlan `json:"installment_plan,omitempty"`
 }
 
 type Pledge struct {
@@ -90,14 +104,25 @@ type Pledge struct {
 	IsConfirmedByBank bool   `json:"is_confirmed_by_bank"`
 }
 
+type InterestRateEntry struct {
+	Rate          float64 `json:"rate"`
+	EffectiveFrom string  `json:"effective_from"`
+	EffectiveTo   string  `json:"effective_to,omitempty"`
+}
+
 // Trusteeship models the BGB § 551 Abs. 3 requirement for insolvency-proof separation.
 type Trusteeship struct {
-	AccountType                       string `json:"account_type,omitempty"`
-	TrusteeEntity                     string `json:"trustee_entity,omitempty"`
-	TrustAccountIBAN                  string `json:"trust_account_iban,omitempty"`
-	InsolvencyProtectionConfirmed     bool   `json:"insolvency_protection_confirmed"`
-	InsolvencyProtectionConfirmedDate string `json:"insolvency_protection_confirmed_date,omitempty"`
-	StatutoryBasis                    string `json:"statutory_basis,omitempty"`
+	AccountType                       string              `json:"account_type,omitempty"`
+	TrusteeEntity                     string              `json:"trustee_entity,omitempty"`
+	TrustAccountIBAN                  string              `json:"trust_account_iban,omitempty"`
+	InsolvencyProtectionConfirmed     bool                `json:"insolvency_protection_confirmed"`
+	InsolvencyProtectionConfirmedDate string              `json:"insolvency_protection_confirmed_date,omitempty"`
+	StatutoryBasis                    string              `json:"statutory_basis,omitempty"`
+	InterestRate                      float64             `json:"interest_rate,omitempty"`
+	InterestRateHistory               []InterestRateEntry `json:"interest_rate_history,omitempty"`
+	AccruedInterest                   float64             `json:"accrued_interest,omitempty"`
+	InterestCalculatedAt              string              `json:"interest_calculated_at,omitempty"`
+	TotalBalance                      float64             `json:"total_balance,omitempty"`
 }
 
 type Provider struct {

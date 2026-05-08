@@ -96,12 +96,26 @@ type HistoryEntry struct {
 	Signature string         `json:"signature,omitempty"`
 }
 
+type InstallmentScheduleEntry struct {
+	InstallmentNumber int     `json:"installment_number"`
+	DueDate           string  `json:"due_date"`
+	PaidDate          string  `json:"paid_date,omitempty"`
+	Amount            float64 `json:"amount,omitempty"`
+}
+
+type InstallmentPlan struct {
+	TotalInstallments int                      `json:"total_installments"`
+	InstallmentAmount float64                  `json:"installment_amount,omitempty"`
+	Schedule          []InstallmentScheduleEntry `json:"schedule,omitempty"`
+}
+
 type DepositData struct {
-	Amount         float64        `json:"amount"`
-	Currency       string         `json:"currency"`
-	Type           DepositType    `json:"type"`
-	LifecycleState LifecycleState `json:"lifecycle_state"`
-	History        []HistoryEntry `json:"history,omitempty"`
+	Amount            float64          `json:"amount"`
+	Currency          string           `json:"currency"`
+	Type              DepositType      `json:"type"`
+	LifecycleState    LifecycleState   `json:"lifecycle_state"`
+	History           []HistoryEntry   `json:"history,omitempty"`
+	InstallmentPlan   *InstallmentPlan `json:"installment_plan,omitempty"`
 }
 
 type Pledge struct {
@@ -118,15 +132,29 @@ const (
 	TrustAccountPooled        TrustAccountType = "POOLED_TREUHAND"
 )
 
+type InterestRateEntry struct {
+	Rate          float64 `json:"rate"`
+	EffectiveFrom string  `json:"effective_from"`
+	EffectiveTo   string  `json:"effective_to,omitempty"`
+}
+
 // Trusteeship models the BGB § 551 Abs. 3 requirement that deposit funds are held
 // in a legally separated trust account (Treuhandkonto), insolvency-proof from the landlord.
+// Interest fields: InterestRate is required when active; the transparency-layer fields
+// (InterestRateHistory, AccruedInterest, InterestCalculatedAt, TotalBalance) are optional
+// but allow tenants to independently verify their entitlement.
 type Trusteeship struct {
-	AccountType                       TrustAccountType `json:"account_type,omitempty"`
-	TrusteeEntity                     string           `json:"trustee_entity,omitempty"`
-	TrustAccountIBAN                  string           `json:"trust_account_iban,omitempty"`
-	InsolvencyProtectionConfirmed     bool             `json:"insolvency_protection_confirmed"`
-	InsolvencyProtectionConfirmedDate string           `json:"insolvency_protection_confirmed_date,omitempty"`
-	StatutoryBasis                    string           `json:"statutory_basis,omitempty"`
+	AccountType                       TrustAccountType    `json:"account_type,omitempty"`
+	TrusteeEntity                     string              `json:"trustee_entity,omitempty"`
+	TrustAccountIBAN                  string              `json:"trust_account_iban,omitempty"`
+	InsolvencyProtectionConfirmed     bool                `json:"insolvency_protection_confirmed"`
+	InsolvencyProtectionConfirmedDate string              `json:"insolvency_protection_confirmed_date,omitempty"`
+	StatutoryBasis                    string              `json:"statutory_basis,omitempty"`
+	InterestRate                      float64             `json:"interest_rate,omitempty"`
+	InterestRateHistory               []InterestRateEntry `json:"interest_rate_history,omitempty"`
+	AccruedInterest                   float64             `json:"accrued_interest,omitempty"`
+	InterestCalculatedAt              string              `json:"interest_calculated_at,omitempty"`
+	TotalBalance                      float64             `json:"total_balance,omitempty"`
 }
 
 type Provider struct {

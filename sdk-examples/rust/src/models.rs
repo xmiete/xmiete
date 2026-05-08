@@ -84,11 +84,27 @@ pub struct Property {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct InstallmentScheduleEntry {
+    pub installment_number: u32,
+    pub due_date: NaiveDate,
+    pub paid_date: Option<NaiveDate>,
+    pub amount: Option<f64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct InstallmentPlan {
+    pub total_installments: u32,
+    pub installment_amount: Option<f64>,
+    pub schedule: Option<Vec<InstallmentScheduleEntry>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DepositDetails {
     pub amount: f64,
     pub currency: String,
     pub deposit_type: String,
     pub lifecycle_state: String,
+    pub installment_plan: Option<InstallmentPlan>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -98,7 +114,15 @@ pub struct Pledge {
     pub is_confirmed_by_bank: bool,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct InterestRateEntry {
+    pub rate: f64,
+    pub effective_from: NaiveDate,
+    pub effective_to: Option<NaiveDate>,
+}
+
 /// BGB § 551 Abs. 3 — insolvency-proof separation of deposit funds from the landlord's estate.
+/// interest_rate is required when active; the transparency-layer fields are optional.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Trusteeship {
     pub account_type: Option<String>,
@@ -107,6 +131,11 @@ pub struct Trusteeship {
     pub insolvency_protection_confirmed: bool,
     pub insolvency_protection_confirmed_date: Option<NaiveDate>,
     pub statutory_basis: Option<String>,
+    pub interest_rate: Option<f64>,
+    pub interest_rate_history: Option<Vec<InterestRateEntry>>,
+    pub accrued_interest: Option<f64>,
+    pub interest_calculated_at: Option<DateTime<Utc>>,
+    pub total_balance: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -63,23 +63,50 @@ record Landlord(String name, String type, String iban) {}
 
 record Property(Address address, String unitId) {}
 
+record InstallmentScheduleEntry(
+    int installmentNumber,
+    String dueDate,
+    String paidDate,       // null if not yet paid; used as interest accrual start for this tranche
+    Double amount
+) {}
+
+record InstallmentPlan(
+    int totalInstallments,
+    Double installmentAmount,
+    List<InstallmentScheduleEntry> schedule
+) {}
+
 record DepositDetails(
     Double amount,
     String currency,
     String type,
-    String lifecycleState
+    String lifecycleState,
+    InstallmentPlan installmentPlan
 ) {}
 
 record Pledge(String pledgeDate, String statutoryBasis, boolean isConfirmedByBank) {}
 
-/** BGB § 551 Abs. 3 — insolvency-proof separation of deposit funds from the landlord's estate. */
+record InterestRateEntry(
+    double rate,
+    String effectiveFrom,
+    String effectiveTo     // null if this is the current rate
+) {}
+
+/** BGB § 551 Abs. 3 — insolvency-proof separation of deposit funds from the landlord's estate.
+ *  interestRate is required when active. Transparency-layer fields (interestRateHistory,
+ *  accruedInterest, interestCalculatedAt, totalBalance) are optional. */
 record Trusteeship(
-    String accountType,        // TREUHANDKONTO | ANDERKONTO | POOLED_TREUHAND
+    String accountType,            // TREUHANDKONTO | ANDERKONTO | POOLED_TREUHAND
     String trusteeEntity,
     String trustAccountIban,
     boolean insolvencyProtectionConfirmed,
     String insolvencyProtectionConfirmedDate,
-    String statutoryBasis
+    String statutoryBasis,
+    Double interestRate,
+    List<InterestRateEntry> interestRateHistory,
+    Double accruedInterest,
+    String interestCalculatedAt,
+    Double totalBalance
 ) {}
 
 record Provider(
