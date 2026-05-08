@@ -141,3 +141,134 @@ fn verify_hmac(body: &[u8], signature: &str, secret: &str) -> Result<(), Webhook
     mac.verify_slice(&expected)
         .map_err(|_| WebhookError::SignatureMismatch)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{WebhookError, WebhookHandler};
+    use super::super::{EidError, EidVerifier, KycUpdatePayload, VerificationRequest, VerificationSession};
+    use async_trait::async_trait;
+    use hmac::{Hmac, Mac};
+    use sha2::Sha256;
+    use std::sync::{
+        atomic::{AtomicU32, Ordering},
+        Arc,
+    };
+
+    struct MockVerifier {
+        kyc_called: Arc<AtomicU32>,
+    }
+
+    #[async_trait]
+    impl EidVerifier for MockVerifier {
+        async fn initiate_verification(&self, _req: &VerificationRequest) -> Result<VerificationSession, EidError> {
+            unimplemented!("not exercised by webhook tests")
+        }
+
+        async fn update_deposit_kyc_status(&self, _deposit_id: &str, _payload: &KycUpdatePayload, _bearer_token: &str) -> Result<(), EidError> {
+            self.kyc_called.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+
+    fn mock_verifier() -> (Arc<MockVerifier>, Arc<AtomicU32>) {
+        let counter = Arc::new(AtomicU32::new(0));
+        let v = Arc::new(MockVerifier { kyc_called: counter.clone() });
+        (v, counter)
+    }
+
+    fn sign(body: &[u8], secret: &str) -> String {
+        let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
+        mac.update(body);
+        hex::encode(mac.finalize().into_bytes())
+    }
+
+    #[tokio::test]
+    async fn test_valid_verified_webhook_calls_kyc() {
+        let (verifier, counter) = mock_verifier();
+        let handler = WebhookHandler::new(verifier, "tok", None);
+
+        let body = serde_json::json!({
+            "deposit_id": "DEP-1",
+            "status": "VERIFIED",
+            "provider_reference": "ref-abc",
+        })
+        .to_string();
+        let sig = sign(body.as_bytes(), "secret");
+
+        handler.handle_webhook(body.as_bytes(), &sig, "secret").await.unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        assert_eq!(counter.load(Ordering::SeqCst), 1, "update_deposit_kyc_status should be called once");
+    }
+
+    #[tokio::test]
+    async fn test_failed_status_does_not_call_kyc() {
+        let (verifier, counter) = mock_verifier();
+        let handler = WebhookHandler::new(verifier, "tok", None);
+
+        let body = serde_json::json!({"deposit_id": "DEP-2", "status": "FAILED"}).to_string();
+        let sig = sign(body.as_bytes(), "s");
+
+        handler.handle_webhook(body.as_bytes(), &sig, "s").await.unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        assert_eq!(counter.load(Ordering::SeqCst), 0, "update_deposit_kyc_status must not be called for FAILED");
+    }
+
+    #[tokio::test]
+    async fn test_missing_signature_returns_error() {
+        let (verifier, _) = mock_verifier();
+        let handler = WebhookHandler::new(verifier, "tok", None);
+        let body = b"{\"deposit_id\":\"DEP-1\",\"status\":\"VERIFIED\"}";
+        let err = handler.handle_webhook(body, "", "secret").await.unwrap_err();
+        assert!(matches!(err, WebhookError::MissingSignature));
+    }
+
+    #[tokio::test]
+    async fn test_signature_mismatch_returns_error() {
+        let (verifier, _) = mock_verifier();
+        let handler = WebhookHandler::new(verifier, "tok", None);
+        let body = b"{\"deposit_id\":\"DEP-1\",\"status\":\"VERIFIED\"}";
+        // Correct length hex but wrong value.
+        let bad_sig = "a".repeat(64);
+        let err = handler.handle_webhook(body, &bad_sig, "secret").await.unwrap_err();
+        assert!(matches!(err, WebhookError::SignatureMismatch));
+    }
+
+    #[tokio::test]
+    async fn test_missing_deposit_id_returns_error() {
+        let (verifier, _) = mock_verifier();
+        let handler = WebhookHandler::new(verifier, "tok", None);
+        let body = serde_json::json!({"status": "VERIFIED"}).to_string();
+        let sig = sign(body.as_bytes(), "s");
+        let err = handler.handle_webhook(body.as_bytes(), &sig, "s").await.unwrap_err();
+        assert!(matches!(err, WebhookError::MissingFields));
+    }
+
+    #[tokio::test]
+    async fn test_custom_adapter_wires_into_webhook_handler() {
+        // Verifies provider agnosticism: any EidVerifier implementation
+        // plugs into WebhookHandler without touching any other SDK code.
+        struct CustomAdapter { inner: MockVerifier }
+
+        #[async_trait]
+        impl EidVerifier for CustomAdapter {
+            async fn initiate_verification(&self, req: &VerificationRequest) -> Result<VerificationSession, EidError> {
+                self.inner.initiate_verification(req).await
+            }
+            async fn update_deposit_kyc_status(&self, d: &str, p: &KycUpdatePayload, t: &str) -> Result<(), EidError> {
+                self.inner.update_deposit_kyc_status(d, p, t).await
+            }
+        }
+
+        let counter = Arc::new(AtomicU32::new(0));
+        let adapter = Arc::new(CustomAdapter {
+            inner: MockVerifier { kyc_called: counter.clone() },
+        });
+        let handler = WebhookHandler::new(adapter, "tok", None);
+
+        let body = serde_json::json!({"deposit_id": "DEP-9", "status": "VERIFIED"}).to_string();
+        let sig = sign(body.as_bytes(), "s");
+        handler.handle_webhook(body.as_bytes(), &sig, "s").await.unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        assert_eq!(counter.load(Ordering::SeqCst), 1);
+    }
+}

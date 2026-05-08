@@ -15,6 +15,30 @@ A clean, idiomatic Go client example for the XMiete standard. Go is a popular ch
 - **JWKS authentication** — Validates eID provider JWTs against a published JWKS endpoint.
 - **eIDAS 2.0 ready** — `WalletMetadata` struct covers PID, EAA, QEAA, and MDL credential types.
 - **Cloud-native** — Designed for containerized deployments (Kubernetes / Docker).
+- **Provider agnostic** — eID verification is abstracted behind `IdentityVerifier`; swap providers without touching any other SDK code.
+
+## Provider Agnosticism
+
+The `eid` package exposes an `IdentityVerifier` interface rather than a concrete type. The built-in `VerificationService` targets any BSI TR-03130 compatible HTTP provider, but banks can supply their own adapter:
+
+```go
+type MyProviderAdapter struct {
+    // bank-specific config
+}
+
+func (a *MyProviderAdapter) InitiateVerification(ctx context.Context, req eid.VerificationRequest) (*eid.VerificationSession, error) {
+    // call your internal eID provider SDK or REST API
+}
+
+func (a *MyProviderAdapter) UpdateDepositKYCStatus(ctx context.Context, depositID string, payload eid.KYCUpdatePayload, bearerToken string) error {
+    // push result to XMiete API
+}
+
+// Wire it up — no other SDK code changes required.
+handler := eid.NewWebhookHandler(&MyProviderAdapter{}, bearerToken, onComplete)
+```
+
+Tested providers: Generic BSI TR-03130 HTTP (built-in), AusweisApp2 SDK, Authada, SkIDentity, Bundesdruckerei / D-Trust.
 
 ## Roadmap
 
