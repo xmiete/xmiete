@@ -64,6 +64,12 @@ func NewRouter(s *Server, jwtSecret string) http.Handler {
 			// PDF release confirmation — sent on RELEASED, also available on demand
 			r.Get("/deposits/{id}/release-receipt", s.GetReleaseReceipt)
 
+			// Structured settlement flow (inspired by UK TDS/DPS, AU RTBA, CH Mietkaution)
+			r.Post("/deposits/{id}/settle", s.Settle)
+			r.Post("/deposits/{id}/settle/accept", s.SettleAccept)
+			r.Post("/deposits/{id}/dispute", s.Dispute)
+			r.Post("/deposits/{id}/dispute/resolve", s.DisputeResolve)
+
 			// QEAA issuance trigger — called by bank after pledge
 			r.Post("/deposits/{id}/issue-credential", s.IssueCredential)
 

@@ -386,6 +386,282 @@ func (s *Server) sendReleaseReceiptEmail(d *models.Deposit) {
 	}()
 }
 
+// POST /deposits/{id}/settle
+// Proposes (or counter-proposes) an itemized deposit split. Either party may initiate.
+// From PLEDGED/FUNDED → SETTLE_PROPOSED (first proposal).
+// From SETTLE_PROPOSED → counter-proposal updates the settlement in place (no state change).
+func (s *Server) Settle(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	var req models.SettleRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON", "BAD_REQUEST")
+		return
+	}
+	if req.InitiatedBy != "LANDLORD" && req.InitiatedBy != "TENANT" {
+		writeError(w, http.StatusBadRequest, "initiated_by must be LANDLORD or TENANT", "VALIDATION_ERROR")
+		return
+	}
+	if len(req.ClaimItems) == 0 {
+		writeError(w, http.StatusBadRequest, "claim_items must not be empty", "VALIDATION_ERROR")
+		return
+	}
+	for _, item := range req.ClaimItems {
+		if item.AmountClaimed <= 0 || item.Description == "" {
+			writeError(w, http.StatusBadRequest, "each claim item requires description and amount_claimed > 0", "VALIDATION_ERROR")
+			return
+		}
+	}
+
+	current, err := s.repo.GetByID(r.Context(), id)
+	if errors.Is(err, db.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "deposit not found", "NOT_FOUND")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to fetch deposit", "INTERNAL_ERROR")
+		return
+	}
+
+	state := current.Deposit.LifecycleState
+	isFirstProposal := state == models.StatePledged || state == models.StateFunded
+	isCounter := state == models.StateSettleProposed
+
+	if !isFirstProposal && !isCounter {
+		writeError(w, http.StatusConflict,
+			fmt.Sprintf("cannot propose settlement in state %s", state),
+			"INVALID_TRANSITION")
+		return
+	}
+	if isCounter && current.Settlement != nil && current.Settlement.LastProposedBy == req.InitiatedBy {
+		writeError(w, http.StatusConflict, "cannot counter your own proposal — wait for the other party to respond", "CONFLICT")
+		return
+	}
+
+	now := time.Now().UTC()
+	totalClaimed := 0.0
+	items := make([]models.ClaimItem, len(req.ClaimItems))
+	for i, inp := range req.ClaimItems {
+		totalClaimed += inp.AmountClaimed
+		items[i] = models.ClaimItem{
+			ID:            fmt.Sprintf("item-%d", i+1),
+			Category:      inp.Category,
+			Description:   inp.Description,
+			AmountClaimed: inp.AmountClaimed,
+			EvidenceRefs:  inp.EvidenceRefs,
+			RoomOrArea:    inp.RoomOrArea,
+		}
+	}
+
+	settlement := &models.Settlement{
+		LastProposedBy:            req.InitiatedBy,
+		LastProposedAt:            now,
+		TenancyEndDate:            req.TenancyEndDate,
+		HandoverDate:              req.HandoverDate,
+		HandoverProtocolRef:       req.HandoverProtocolRef,
+		ClaimItems:                items,
+		TotalClaimed:              totalClaimed,
+		ProposedTenantRefund:      req.ProposedTenantRefund,
+		ProposedLandlordRetention: req.ProposedLandlordRetention,
+		ResponseDeadline:          now.AddDate(0, 0, 14).Format("2006-01-02"),
+	}
+	if isFirstProposal {
+		settlement.InitiatedBy = req.InitiatedBy
+		settlement.InitiatedAt = now
+	} else {
+		settlement.InitiatedBy = current.Settlement.InitiatedBy
+		settlement.InitiatedAt = current.Settlement.InitiatedAt
+	}
+
+	entry := models.HistoryEntry{State: models.StateSettleProposed, Actor: req.InitiatedBy}
+	if isCounter {
+		entry.Comment = "counter-proposal"
+	}
+
+	var updated *models.Deposit
+	if isFirstProposal {
+		if _, err := statemachine.Transition(state, models.StateSettleProposed); err != nil {
+			writeError(w, http.StatusConflict, err.Error(), "INVALID_TRANSITION")
+			return
+		}
+		updated, err = s.repo.UpdateState(r.Context(), id, models.StateSettleProposed, entry, func(d *models.Deposit) {
+			d.Settlement = settlement
+		})
+	} else {
+		// Counter-proposal: update settlement without a state transition.
+		updated, err = s.repo.UpdateState(r.Context(), id, models.StateSettleProposed, entry, func(d *models.Deposit) {
+			d.Settlement = settlement
+		})
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update deposit", "INTERNAL_ERROR")
+		return
+	}
+
+	s.fireWebhook(updated)
+	writeJSON(w, http.StatusOK, updated)
+}
+
+// POST /deposits/{id}/settle/accept
+// The non-proposing party accepts the current settlement proposal → CLOSED.
+func (s *Server) SettleAccept(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	var req models.SettleAcceptRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON", "BAD_REQUEST")
+		return
+	}
+	if req.AcceptedBy != "LANDLORD" && req.AcceptedBy != "TENANT" {
+		writeError(w, http.StatusBadRequest, "accepted_by must be LANDLORD or TENANT", "VALIDATION_ERROR")
+		return
+	}
+
+	current, err := s.repo.GetByID(r.Context(), id)
+	if errors.Is(err, db.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "deposit not found", "NOT_FOUND")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to fetch deposit", "INTERNAL_ERROR")
+		return
+	}
+
+	if current.Deposit.LifecycleState != models.StateSettleProposed {
+		writeError(w, http.StatusConflict,
+			fmt.Sprintf("cannot accept settlement in state %s", current.Deposit.LifecycleState),
+			"INVALID_TRANSITION")
+		return
+	}
+	if current.Settlement == nil {
+		writeError(w, http.StatusConflict, "no active settlement proposal", "CONFLICT")
+		return
+	}
+	if current.Settlement.LastProposedBy == req.AcceptedBy {
+		writeError(w, http.StatusConflict, "cannot accept your own proposal", "CONFLICT")
+		return
+	}
+
+	if _, err := statemachine.Transition(models.StateSettleProposed, models.StateClosed); err != nil {
+		writeError(w, http.StatusConflict, err.Error(), "INVALID_TRANSITION")
+		return
+	}
+
+	entry := models.HistoryEntry{State: models.StateClosed, Actor: req.AcceptedBy, Comment: "settlement accepted"}
+	updated, err := s.repo.UpdateState(r.Context(), id, models.StateClosed, entry, func(d *models.Deposit) {
+		d.Settlement.AgreedTenantRefund = d.Settlement.ProposedTenantRefund
+		d.Settlement.AgreedLandlordRetention = d.Settlement.ProposedLandlordRetention
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update deposit", "INTERNAL_ERROR")
+		return
+	}
+
+	s.fireWebhook(updated)
+	writeJSON(w, http.StatusOK, updated)
+}
+
+// POST /deposits/{id}/dispute
+// Escalates an unresolved settlement to an external authority (Schlichtungsbehörde, Amtsgericht, etc.).
+func (s *Server) Dispute(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	var req models.DisputeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON", "BAD_REQUEST")
+		return
+	}
+	if req.EscalatedBy != "LANDLORD" && req.EscalatedBy != "TENANT" {
+		writeError(w, http.StatusBadRequest, "escalated_by must be LANDLORD or TENANT", "VALIDATION_ERROR")
+		return
+	}
+	valid := map[string]bool{"PLATFORM_MEDIATION": true, "SCHLICHTUNGSBEHOERDE": true, "AMTSGERICHT": true}
+	if !valid[req.EscalationType] {
+		writeError(w, http.StatusBadRequest, "escalation_type must be PLATFORM_MEDIATION, SCHLICHTUNGSBEHOERDE, or AMTSGERICHT", "VALIDATION_ERROR")
+		return
+	}
+
+	current, err := s.repo.GetByID(r.Context(), id)
+	if errors.Is(err, db.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "deposit not found", "NOT_FOUND")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to fetch deposit", "INTERNAL_ERROR")
+		return
+	}
+
+	if _, err := statemachine.Transition(current.Deposit.LifecycleState, models.StateDisputed); err != nil {
+		writeError(w, http.StatusConflict, err.Error(), "INVALID_TRANSITION")
+		return
+	}
+
+	entry := models.HistoryEntry{State: models.StateDisputed, Actor: req.EscalatedBy, Comment: req.EscalationType}
+	updated, err := s.repo.UpdateState(r.Context(), id, models.StateDisputed, entry, func(d *models.Deposit) {
+		if d.Settlement == nil {
+			d.Settlement = &models.Settlement{}
+		}
+		d.Settlement.EscalationType = req.EscalationType
+		d.Settlement.ExternalAuthority = req.EscalationType
+		d.Settlement.ExternalReference = req.ExternalReference
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update deposit", "INTERNAL_ERROR")
+		return
+	}
+
+	s.fireWebhook(updated)
+	writeJSON(w, http.StatusOK, updated)
+}
+
+// POST /deposits/{id}/dispute/resolve
+// Records the outcome of external dispute resolution → CLOSED.
+func (s *Server) DisputeResolve(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	var req models.DisputeResolveRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON", "BAD_REQUEST")
+		return
+	}
+	if req.AgreedTenantRefund < 0 || req.AgreedLandlordRetention < 0 {
+		writeError(w, http.StatusBadRequest, "agreed amounts must be non-negative", "VALIDATION_ERROR")
+		return
+	}
+
+	current, err := s.repo.GetByID(r.Context(), id)
+	if errors.Is(err, db.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "deposit not found", "NOT_FOUND")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to fetch deposit", "INTERNAL_ERROR")
+		return
+	}
+
+	if _, err := statemachine.Transition(current.Deposit.LifecycleState, models.StateClosed); err != nil {
+		writeError(w, http.StatusConflict, err.Error(), "INVALID_TRANSITION")
+		return
+	}
+
+	entry := models.HistoryEntry{State: models.StateClosed, Actor: "EXTERNAL", Comment: req.ResolutionReference}
+	updated, err := s.repo.UpdateState(r.Context(), id, models.StateClosed, entry, func(d *models.Deposit) {
+		if d.Settlement == nil {
+			d.Settlement = &models.Settlement{}
+		}
+		d.Settlement.AgreedTenantRefund = req.AgreedTenantRefund
+		d.Settlement.AgreedLandlordRetention = req.AgreedLandlordRetention
+		d.Settlement.ExternalReference = req.ResolutionReference
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update deposit", "INTERNAL_ERROR")
+		return
+	}
+
+	s.fireWebhook(updated)
+	writeJSON(w, http.StatusOK, updated)
+}
+
 // fireWebhook posts a state-change event to s.webhookURL asynchronously.
 func (s *Server) fireWebhook(d *models.Deposit) {
 	if s.webhookURL == "" {

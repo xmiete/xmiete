@@ -20,14 +20,62 @@ import "time"
 type LifecycleState string
 
 const (
-	StateRequested  LifecycleState = "REQUESTED"
-	StateIdentified LifecycleState = "IDENTIFIED"
-	StateFunded     LifecycleState = "FUNDED"
-	StatePledged    LifecycleState = "PLEDGED"
-	StateReleased   LifecycleState = "RELEASED"
-	StateClaimed    LifecycleState = "CLAIMED"
-	StateClosed     LifecycleState = "CLOSED"
+	StateRequested      LifecycleState = "REQUESTED"
+	StateIdentified     LifecycleState = "IDENTIFIED"
+	StateFunded         LifecycleState = "FUNDED"
+	StatePledged        LifecycleState = "PLEDGED"
+	StateReleased       LifecycleState = "RELEASED"
+	StateClaimed        LifecycleState = "CLAIMED"
+	StateSettleProposed LifecycleState = "SETTLE_PROPOSED"
+	StateDisputed       LifecycleState = "DISPUTED"
+	StateClosed         LifecycleState = "CLOSED"
 )
+
+type ClaimCategory string
+
+const (
+	ClaimCategoryRentArrears             ClaimCategory = "RENT_ARREARS"
+	ClaimCategoryUtilityArrears          ClaimCategory = "UTILITY_ARREARS"
+	ClaimCategoryDamage                  ClaimCategory = "DAMAGE"
+	ClaimCategoryCleaning                ClaimCategory = "CLEANING"
+	ClaimCategoryCosmeticRepairs         ClaimCategory = "COSMETIC_REPAIRS"
+	ClaimCategoryUnauthorizedAlterations ClaimCategory = "UNAUTHORIZED_ALTERATIONS"
+	ClaimCategoryMissingItems            ClaimCategory = "MISSING_ITEMS"
+	ClaimCategoryOther                   ClaimCategory = "OTHER"
+)
+
+// ClaimItem is a single itemized deduction within a settlement proposal.
+type ClaimItem struct {
+	ID            string        `json:"id"`
+	Category      ClaimCategory `json:"category"`
+	Description   string        `json:"description"`
+	AmountClaimed float64       `json:"amount_claimed"`
+	EvidenceRefs  []string      `json:"evidence_refs,omitempty"`
+	RoomOrArea    string        `json:"room_or_area,omitempty"`
+}
+
+// Settlement records the structured negotiation between landlord and tenant
+// over the deposit split at tenancy end, inspired by UK TDS/DPS, Australian
+// RTBA, and Swiss Mietkaution bilateral-release patterns.
+type Settlement struct {
+	InitiatedBy               string      `json:"initiated_by"`
+	InitiatedAt               time.Time   `json:"initiated_at"`
+	LastProposedBy            string      `json:"last_proposed_by"`
+	LastProposedAt            time.Time   `json:"last_proposed_at"`
+	TenancyEndDate            string      `json:"tenancy_end_date,omitempty"`
+	HandoverDate              string      `json:"handover_date,omitempty"`
+	HandoverProtocolRef       string      `json:"handover_protocol_ref,omitempty"`
+	ClaimItems                []ClaimItem `json:"claim_items"`
+	TotalClaimed              float64     `json:"total_claimed"`
+	ProposedTenantRefund      float64     `json:"proposed_tenant_refund"`
+	ProposedLandlordRetention float64     `json:"proposed_landlord_retention"`
+	ResponseDeadline          string      `json:"response_deadline,omitempty"`
+	EscalationType            string      `json:"escalation_type,omitempty"`
+	ExternalAuthority         string      `json:"external_authority,omitempty"`
+	ExternalReference         string      `json:"external_reference,omitempty"`
+	AgreedTenantRefund        float64     `json:"agreed_tenant_refund,omitempty"`
+	AgreedLandlordRetention   float64     `json:"agreed_landlord_retention,omitempty"`
+}
 
 type DepositType string
 
@@ -236,6 +284,7 @@ type Deposit struct {
 	Trusteeship *Trusteeship `json:"trusteeship,omitempty"`
 	Provider    *Provider    `json:"provider,omitempty"`
 	Transport   *Transport   `json:"transport,omitempty"`
+	Settlement  *Settlement  `json:"settlement,omitempty"`
 }
 
 // Request/response payloads for action endpoints.
@@ -263,6 +312,46 @@ type ClaimRequest struct {
 	ClaimAmount  float64  `json:"claim_amount"`
 	Reason       string   `json:"reason"`
 	EvidenceURLs []string `json:"evidence_urls,omitempty"`
+}
+
+// SettleRequest is sent by either party to propose (or counter-propose) a split.
+// The amounts must satisfy: proposed_tenant_refund + proposed_landlord_retention = deposit amount.
+type SettleRequest struct {
+	InitiatedBy               string            `json:"initiated_by"` // LANDLORD | TENANT
+	TenancyEndDate            string            `json:"tenancy_end_date,omitempty"`
+	HandoverDate              string            `json:"handover_date,omitempty"`
+	HandoverProtocolRef       string            `json:"handover_protocol_ref,omitempty"`
+	ClaimItems                []ClaimItemInput  `json:"claim_items"`
+	ProposedTenantRefund      float64           `json:"proposed_tenant_refund"`
+	ProposedLandlordRetention float64           `json:"proposed_landlord_retention"`
+}
+
+type ClaimItemInput struct {
+	Category      ClaimCategory `json:"category"`
+	Description   string        `json:"description"`
+	AmountClaimed float64       `json:"amount_claimed"`
+	EvidenceRefs  []string      `json:"evidence_refs,omitempty"`
+	RoomOrArea    string        `json:"room_or_area,omitempty"`
+}
+
+// SettleAcceptRequest is sent by the non-proposing party to accept the current proposal.
+type SettleAcceptRequest struct {
+	AcceptedBy string `json:"accepted_by"` // LANDLORD | TENANT
+}
+
+// DisputeRequest escalates an unresolved settlement to an external authority.
+type DisputeRequest struct {
+	EscalatedBy       string `json:"escalated_by"`    // LANDLORD | TENANT
+	EscalationType    string `json:"escalation_type"` // PLATFORM_MEDIATION | SCHLICHTUNGSBEHOERDE | AMTSGERICHT
+	ExternalReference string `json:"external_reference,omitempty"`
+	Statement         string `json:"statement,omitempty"`
+}
+
+// DisputeResolveRequest records the outcome of external dispute resolution.
+type DisputeResolveRequest struct {
+	AgreedTenantRefund      float64 `json:"agreed_tenant_refund"`
+	AgreedLandlordRetention float64 `json:"agreed_landlord_retention"`
+	ResolutionReference     string  `json:"resolution_reference,omitempty"`
 }
 
 type ErrorResponse struct {
