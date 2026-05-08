@@ -61,7 +61,13 @@ func NewRouter(s *Server, jwtSecret string) http.Handler {
 
 			// QEAA issuance trigger — called by bank after pledge
 			r.Post("/deposits/{id}/issue-credential", s.IssueCredential)
+
+			// OpenID4VP — landlord initiates presentation request (JWT-authenticated)
+			r.Post("/deposits/{id}/vp-request", s.CreateVpRequest)
 		})
+
+		// OpenID4VP wallet response — no JWT; wallet self-authenticates via KB-JWT in vp_token
+		r.Post("/deposits/{id}/vp-response", s.ReceiveVpResponse)
 	})
 
 	return r

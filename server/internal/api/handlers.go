@@ -27,21 +27,24 @@ import (
 	"github.com/xmiete/server/internal/issuance"
 	"github.com/xmiete/server/internal/models"
 	"github.com/xmiete/server/internal/statemachine"
+	"github.com/xmiete/server/internal/verification"
 )
 
 type Server struct {
 	repo       db.Repository
 	webhookURL string // optional; POST state-change events here
 	sessions   *issuance.Store
+	vpSessions *verification.Store
 	issuerURL  string // base URL for OID4VCI endpoints, e.g. https://api.xmiete.org
 }
 
 func NewServer(repo db.Repository, webhookURL, issuerURL string) *Server {
 	return &Server{
-		repo:      repo,
+		repo:       repo,
 		webhookURL: webhookURL,
-		sessions:  issuance.NewStore(),
-		issuerURL: issuerURL,
+		sessions:   issuance.NewStore(),
+		vpSessions: verification.NewStore(),
+		issuerURL:  issuerURL,
 	}
 }
 

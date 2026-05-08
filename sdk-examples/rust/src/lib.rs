@@ -16,6 +16,7 @@
 
 pub mod eid;
 pub mod models;
+pub mod openid4vp;
 
 use async_trait::async_trait;
 use crate::models::Deposit;
