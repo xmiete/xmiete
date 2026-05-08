@@ -34,6 +34,8 @@ import (
 	"time"
 )
 
+var _ IdentityVerifier = (*VerificationService)(nil)
+
 type VerificationService struct {
 	httpClient         *http.Client
 	eidProviderBaseURL string

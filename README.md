@@ -16,6 +16,47 @@ XMiete Core provides a unified JSON schema, OpenAPI specification, and reference
 - **Legal Compliance** — Designed for BGB § 551 and eIDAS 2.0 / EUDI ARF requirements.
 - **Tax Compliance** — Steuer-ID (11-digit) validation support.
 
+## Provider Agnosticism
+
+XMiete Core is built to avoid middleware lock-in — a hard requirement for banks that must retain control over their own trust infrastructure.
+
+Every identity verification module is defined behind a narrow interface (`IdentityVerifier` in Go, `EidVerifier` in Rust). The SDK ships one concrete adapter for a generic BSI TR-03130 HTTP provider, but any bank can replace it:
+
+| Provider | Type | Notes |
+|---|---|---|
+| Generic HTTP | Built-in | Compatible with any BSI TR-03130 REST service |
+| AusweisApp2 SDK | Custom adapter | Bundesdruckerei — local SDK, no external network hop |
+| Authada | Custom adapter | SaaS, used by several German Sparkassen |
+| SkIDentity | Custom adapter | OpenID Connect front-end for eID |
+| Bundesdruckerei / D-Trust | Custom adapter | Government-grade HSM signing flow |
+
+To plug in your own provider, implement a single interface — no core SDK changes required:
+
+**Go**
+```go
+type MyProviderAdapter struct{ /* your config */ }
+
+func (a *MyProviderAdapter) InitiateVerification(ctx context.Context, req eid.VerificationRequest) (*eid.VerificationSession, error) { … }
+func (a *MyProviderAdapter) UpdateDepositKYCStatus(ctx context.Context, depositID string, payload eid.KYCUpdatePayload, bearerToken string) error { … }
+
+handler := eid.NewWebhookHandler(&MyProviderAdapter{…}, bearerToken, onComplete)
+```
+
+**Rust**
+```rust
+struct MyProviderAdapter { /* config */ }
+
+#[async_trait]
+impl EidVerifier for MyProviderAdapter {
+    async fn initiate_verification(&self, req: &VerificationRequest) -> Result<VerificationSession, EidError> { … }
+    async fn update_deposit_kyc_status(&self, deposit_id: &str, payload: &KycUpdatePayload, bearer_token: &str) -> Result<(), EidError> { … }
+}
+
+let handler = WebhookHandler::new(Arc::new(MyProviderAdapter { … }), bearer_token, None);
+```
+
+Swap providers, run your test suite, ship.
+
 ## Credential Issuance Flow (QEAA)
 
 ```

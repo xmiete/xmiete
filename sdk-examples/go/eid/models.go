@@ -16,7 +16,18 @@
 
 package eid
 
-import "time"
+import (
+	"context"
+	"time"
+)
+
+// IdentityVerifier is the interface a bank must satisfy to integrate an eID provider.
+// Implement this to swap in AusweisApp2, Authada, SkIDentity, Bundesdruckerei,
+// or any custom BSI TR-03130 compatible provider without changing any other SDK code.
+type IdentityVerifier interface {
+	InitiateVerification(ctx context.Context, req VerificationRequest) (*VerificationSession, error)
+	UpdateDepositKYCStatus(ctx context.Context, depositID string, payload KYCUpdatePayload, bearerToken string) error
+}
 
 type EIDStatus string
 

@@ -23,11 +23,12 @@
 //!  3. The provider POSTs to your webhook → handled by `WebhookHandler`
 //!  4. `WebhookHandler` calls `update_deposit_kyc_status` to finalize the deposit state
 
+use async_trait::async_trait;
 use chrono::Utc;
 use reqwest::Client;
 use serde::Deserialize;
 
-use super::{KycUpdatePayload, VerificationRequest, VerificationSession};
+use super::{EidVerifier, KycUpdatePayload, VerificationRequest, VerificationSession};
 
 #[derive(Debug, thiserror::Error)]
 pub enum EidError {
@@ -53,10 +54,13 @@ impl EidVerificationService {
             xmiete_api_base_url: xmiete_api_base_url.into(),
         }
     }
+}
 
+#[async_trait]
+impl EidVerifier for EidVerificationService {
     /// Creates an eID verification session. Redirect the tenant to the returned
     /// `authorization_url` within the 15-minute validity window.
-    pub async fn initiate_verification(
+    async fn initiate_verification(
         &self,
         req: &VerificationRequest,
     ) -> Result<VerificationSession, EidError> {
@@ -109,7 +113,7 @@ impl EidVerificationService {
 
     /// Pushes the verified eID result to the XMiete API (PATCH /deposits/{id}/identity).
     /// Only `provider_reference` is forwarded — never raw PII from the eID chip.
-    pub async fn update_deposit_kyc_status(
+    async fn update_deposit_kyc_status(
         &self,
         deposit_id: &str,
         payload: &KycUpdatePayload,

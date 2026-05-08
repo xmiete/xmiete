@@ -50,14 +50,14 @@ var (
 )
 
 type WebhookHandler struct {
-	service     *VerificationService
+	service     IdentityVerifier
 	bearerToken string
 	onComplete  func(WebhookEvent)
 }
 
 // NewWebhookHandler creates a handler that validates signatures, then calls service.UpdateDepositKYCStatus
 // and optionally invokes onComplete (may be nil) once verification is dispatched.
-func NewWebhookHandler(service *VerificationService, bearerToken string, onComplete func(WebhookEvent)) *WebhookHandler {
+func NewWebhookHandler(service IdentityVerifier, bearerToken string, onComplete func(WebhookEvent)) *WebhookHandler {
 	return &WebhookHandler{
 		service:     service,
 		bearerToken: bearerToken,

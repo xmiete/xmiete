@@ -17,6 +17,9 @@
 pub mod service;
 pub mod webhook;
 
+pub use service::EidError;
+
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -65,4 +68,19 @@ pub struct WebhookEvent {
     pub provider_reference: Option<String>,
     pub completed_at: Option<DateTime<Utc>>,
     pub error_code: Option<String>,
+}
+
+/// Implement this trait to integrate any BSI TR-03130 compatible eID provider.
+/// The included [`service::EidVerificationService`] targets a generic HTTP provider.
+/// Banks can supply their own adapter — e.g., for AusweisApp2, Authada, SkIDentity, or
+/// Bundesdruckerei — without touching any other part of the SDK.
+#[async_trait]
+pub trait EidVerifier: Send + Sync {
+    async fn initiate_verification(&self, req: &VerificationRequest) -> Result<VerificationSession, EidError>;
+    async fn update_deposit_kyc_status(
+        &self,
+        deposit_id: &str,
+        payload: &KycUpdatePayload,
+        bearer_token: &str,
+    ) -> Result<(), EidError>;
 }

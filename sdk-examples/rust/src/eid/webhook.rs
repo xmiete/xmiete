@@ -36,7 +36,7 @@ use chrono::Utc;
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
 
-use super::{service::EidVerificationService, EidStatus, KycUpdatePayload, WebhookEvent};
+use super::{EidVerifier, EidStatus, KycUpdatePayload, WebhookEvent};
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -55,14 +55,14 @@ pub enum WebhookError {
 }
 
 pub struct WebhookHandler {
-    service: Arc<EidVerificationService>,
+    service: Arc<dyn EidVerifier>,
     bearer_token: String,
     on_complete: Option<Box<dyn Fn(WebhookEvent) + Send + Sync>>,
 }
 
 impl WebhookHandler {
     pub fn new(
-        service: Arc<EidVerificationService>,
+        service: Arc<dyn EidVerifier>,
         bearer_token: impl Into<String>,
         on_complete: Option<Box<dyn Fn(WebhookEvent) + Send + Sync>>,
     ) -> Self {
