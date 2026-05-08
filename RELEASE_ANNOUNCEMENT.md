@@ -27,3 +27,6 @@ XMiete Core is open for contributions. Explore the schema, documentation, and ex
 [https://github.com/xmiete/xmiete-core](https://github.com/xmiete/xmiete-core)
 
 **Together, let's make the digital rental deposit a reality.**
+
+---
+**License:** Licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](./LICENSE-SPECIFICATION).

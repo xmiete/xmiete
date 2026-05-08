@@ -105,3 +105,6 @@ XMiete APIs use standard HTTP status codes:
 - `403 Forbidden`: Insufficient permissions for this specific deposit.
 - `404 Not Found`: Deposit ID does not exist.
 - `409 Conflict`: Transition not allowed from the current state.
+
+---
+**License:** Licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](./LICENSE-SPECIFICATION).

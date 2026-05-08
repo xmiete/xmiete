@@ -41,3 +41,6 @@ stateDiagram-v2
 5. **PLEDGED -> CLAIMED**: Dispute or damage reported by landlord.
 6. **CLAIMED -> RELEASED**: After claim payout or rejection of claim.
 7. **RELEASED -> CLOSED**: Final state after funds are moved back to tenant (or remaining funds).
+
+---
+**License:** Licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](./LICENSE-SPECIFICATION).

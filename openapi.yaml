@@ -6,6 +6,9 @@ info:
   contact:
     name: XMiete Open Source
     url: https://xmiete.org
+  license:
+    name: Creative Commons Attribution 4.0 International
+    url: https://creativecommons.org/licenses/by/4.0/
 servers:
   - url: https://api.xmiete.org/v1
     description: Production API

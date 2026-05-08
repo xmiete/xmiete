@@ -48,3 +48,6 @@ As per the XMiete standard, identity verification for tenants SHOULD prioritize 
 - [ ] PII (Personally Identifiable Information) is encrypted at rest.
 - [ ] Logging does not include sensitive data (Secrets, Tax IDs, IBANs).
 - [ ] Critical state changes are signed via JWS.
+
+---
+**License:** Licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](./LICENSE-SPECIFICATION).
