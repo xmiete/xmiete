@@ -1,5 +1,5 @@
 {
-  "$comment": "Example KautionsPfandNachweis QEAA credential — decoded SD-JWT claims for reference. Wire format is: header.payload.signature~disclosure_1~...~disclosure_n~",
+  "$comment": "Example DepositPledgeAttestation QEAA credential — decoded SD-JWT claims for reference. Wire format is: header.payload.signature~disclosure_1~...~disclosure_n~",
 
   "issuance_flow": "OpenID4VCI Pre-Authorized Code Flow",
   "credential_format": "vc+sd-jwt",
@@ -18,7 +18,7 @@
     "iat": 1746700800,
     "exp": 1778323200,
     "jti": "urn:xmiete:credential:550e8400-e29b-41d4-a716-446655440000",
-    "vct": "KautionsPfandNachweis",
+    "vct": "DepositPledgeAttestation",
     "_sd_alg": "sha-256",
     "_sd": [
       "X1sdO3wG4Kj8...hash_of_deposit_amount_disclosure",
@@ -30,7 +30,7 @@
     ],
     "deposit_id": "dep_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "pledge_date": "2026-05-08",
-    "legal_reference": "BGB § 551",
+    "statutory_basis": "BGB § 551",
     "issuing_bank": "Aareal Bank AG",
     "issuing_bank_id": "https://aareal.bank",
     "property_id": "UNIT-042-OG2"

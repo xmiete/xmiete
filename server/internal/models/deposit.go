@@ -106,7 +106,7 @@ type DepositData struct {
 
 type Pledge struct {
 	PledgeDate        string `json:"pledge_date,omitempty"`
-	LegalReference    string `json:"legal_reference,omitempty"`
+	StatutoryBasis    string `json:"statutory_basis,omitempty"`
 	IsConfirmedByBank bool   `json:"is_confirmed_by_bank"`
 }
 
@@ -121,13 +121,12 @@ const (
 // Trusteeship models the BGB § 551 Abs. 3 requirement that deposit funds are held
 // in a legally separated trust account (Treuhandkonto), insolvency-proof from the landlord.
 type Trusteeship struct {
-	IsTreuhand                        bool             `json:"is_treuhand"`
 	AccountType                       TrustAccountType `json:"account_type,omitempty"`
 	TrusteeEntity                     string           `json:"trustee_entity,omitempty"`
 	TrustAccountIBAN                  string           `json:"trust_account_iban,omitempty"`
 	InsolvencyProtectionConfirmed     bool             `json:"insolvency_protection_confirmed"`
 	InsolvencyProtectionConfirmedDate string           `json:"insolvency_protection_confirmed_date,omitempty"`
-	LegalBasis                        string           `json:"legal_basis,omitempty"`
+	StatutoryBasis                    string           `json:"statutory_basis,omitempty"`
 }
 
 type Provider struct {

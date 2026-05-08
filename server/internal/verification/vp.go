@@ -121,8 +121,8 @@ type FieldFilter struct {
 	Const string `json:"const,omitempty"`
 }
 
-// BuildVpRequest returns the VpRequest for KautionsPfandNachweis.
-// Required claims: vct, deposit_id, pledge_date, legal_reference, issuing_bank, deposit_amount.
+// BuildVpRequest returns the VpRequest for DepositPledgeAttestation.
+// Required claims: vct, deposit_id, pledge_date, statutory_basis, issuing_bank, deposit_amount.
 // Optional claim: pledged_until.
 func BuildVpRequest(clientID, responseURI, nonce, state string) VpRequest {
 	return VpRequest{
@@ -133,10 +133,10 @@ func BuildVpRequest(clientID, responseURI, nonce, state string) VpRequest {
 		Nonce:        nonce,
 		State:        state,
 		PresentationDefinition: PresentationDefinition{
-			ID: "kautionspfandnachweis-pd",
+			ID: "deposit-pledge-attestation-pd",
 			InputDescriptors: []InputDescriptor{
 				{
-					ID: "kautionspfandnachweis",
+					ID: "deposit-pledge-attestation",
 					Format: map[string]FormatAlgs{
 						"vc+sd-jwt": {Alg: []string{"ES256"}},
 					},
@@ -145,11 +145,11 @@ func BuildVpRequest(clientID, responseURI, nonce, state string) VpRequest {
 						Fields: []Field{
 							{
 								Path:   []string{"$.vct"},
-								Filter: &FieldFilter{Type: "string", Const: "KautionsPfandNachweis"},
+								Filter: &FieldFilter{Type: "string", Const: "DepositPledgeAttestation"},
 							},
 							{Path: []string{"$.deposit_id"}},
 							{Path: []string{"$.pledge_date"}},
-							{Path: []string{"$.legal_reference"}},
+							{Path: []string{"$.statutory_basis"}},
 							{Path: []string{"$.issuing_bank"}},
 							{Path: []string{"$.deposit_amount"}},
 							{Path: []string{"$.pledged_until"}, Optional: true},
@@ -170,7 +170,7 @@ type issuerJWTClaims struct {
 	SD             []string `json:"_sd"`
 	DepositID      string   `json:"deposit_id"`
 	PledgeDate     string   `json:"pledge_date"`
-	LegalReference string   `json:"legal_reference"`
+	StatutoryBasis string   `json:"statutory_basis"`
 	IssuingBank    string   `json:"issuing_bank"`
 	IssuingBankID  string   `json:"issuing_bank_id,omitempty"`
 	PropertyID     string   `json:"property_id,omitempty"`
@@ -188,7 +188,7 @@ type VerifiedClaims struct {
 	CredentialID    string    `json:"credential_id"`
 	DepositID       string    `json:"deposit_id"`
 	PledgeDate      string    `json:"pledge_date"`
-	LegalReference  string    `json:"legal_reference"`
+	StatutoryBasis  string    `json:"statutory_basis"`
 	IssuingBank     string    `json:"issuing_bank"`
 	DepositAmount   float64   `json:"deposit_amount,omitempty"`
 	Currency        string    `json:"currency,omitempty"`
@@ -246,7 +246,7 @@ func VerifyVpToken(vpToken string, issuerPublicKey *ecdsa.PublicKey, expectedNon
 	}
 
 	// Step 3: check vct and expiry
-	if claims.VCT != "KautionsPfandNachweis" {
+	if claims.VCT != "DepositPledgeAttestation" {
 		return nil, fmt.Errorf("verification: unexpected vct %q", claims.VCT)
 	}
 	if claims.ExpiresAt != nil && time.Now().After(claims.ExpiresAt.Time) {
@@ -324,7 +324,7 @@ func VerifyVpToken(vpToken string, issuerPublicKey *ecdsa.PublicKey, expectedNon
 		CredentialID:   claims.ID,
 		DepositID:      claims.DepositID,
 		PledgeDate:     claims.PledgeDate,
-		LegalReference: claims.LegalReference,
+		StatutoryBasis: claims.StatutoryBasis,
 		IssuingBank:    claims.IssuingBank,
 		VerifiedAt:     time.Now().UTC(),
 	}

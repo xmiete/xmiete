@@ -98,19 +98,14 @@
       "description": "BGB § 551 specific data",
       "properties": {
         "pledge_date": { "type": "string", "format": "date" },
-        "legal_reference": { "type": "string", "default": "BGB § 551" },
+        "statutory_basis": { "type": "string", "default": "BGB § 551" },
         "is_confirmed_by_bank": { "type": "boolean", "default": false }
       }
     },
     "trusteeship": {
       "type": "object",
-      "description": "Treuhand configuration per BGB § 551 Abs. 3 — insolvency-proof separation of deposit funds from the landlord's own assets.",
+      "description": "Trust account configuration per BGB § 551 Abs. 3 — insolvency-proof separation of deposit funds from the landlord's own assets.",
       "properties": {
-        "is_treuhand": {
-          "type": "boolean",
-          "default": false,
-          "description": "Flags the deposit as held in a legally separated trust account (Treuhandkonto) per BGB § 551 Abs. 3."
-        },
         "account_type": {
           "type": "string",
           "enum": ["TREUHANDKONTO", "ANDERKONTO", "POOLED_TREUHAND"],
@@ -135,7 +130,7 @@
           "format": "date",
           "description": "ISO 8601 date on which the bank confirmed insolvency-proof separation."
         },
-        "legal_basis": {
+        "statutory_basis": {
           "type": "string",
           "default": "BGB § 551 Abs. 3",
           "description": "Statutory basis for the trust arrangement."
@@ -249,10 +244,10 @@
         "country": { "type": "string", "pattern": "^[A-Z]{2}$", "default": "DE" }
       }
     },
-    "kautions_pfand_nachweis": {
+    "deposit_pledge_attestation": {
       "type": "object",
-      "description": "QEAA credential schema for KautionsPfandNachweis — issued by a bank into the tenant's EUDI Wallet after deposit pledge. Format: SD-JWT (vc+sd-jwt). Governed by OpenID4VCI Pre-Authorized Code Flow.",
-      "required": ["deposit_id", "pledge_date", "legal_reference", "issuing_bank"],
+      "description": "QEAA credential schema for DepositPledgeAttestation — issued by a bank into the tenant's EUDI Wallet after deposit pledge. Format: SD-JWT (vc+sd-jwt). Governed by OpenID4VCI Pre-Authorized Code Flow.",
+      "required": ["deposit_id", "pledge_date", "statutory_basis", "issuing_bank"],
       "properties": {
         "deposit_id": {
           "type": "string",
@@ -279,10 +274,10 @@
           "format": "date",
           "description": "[Selectively Disclosed] ISO 8601 date until which the pledge is in effect (typically end of tenancy)."
         },
-        "legal_reference": {
+        "statutory_basis": {
           "type": "string",
           "default": "BGB § 551",
-          "description": "Legal basis for the pledge (always revealed)."
+          "description": "Statutory basis for the pledge (always revealed)."
         },
         "issuing_bank": {
           "type": "string",
@@ -316,7 +311,7 @@
         "credential_format": {
           "type": "string",
           "const": "vc+sd-jwt",
-          "description": "Credential encoding format — always vc+sd-jwt for KautionsPfandNachweis."
+          "description": "Credential encoding format — always vc+sd-jwt for DepositPledgeAttestation."
         },
         "assurance_level": {
           "type": "string",
@@ -430,7 +425,7 @@
         "expires_at": { "type": "string", "format": "date-time" },
         "credential_id": {
           "type": "string",
-          "description": "Set after credential is issued; maps to KautionsPfandNachweis.credential_id."
+          "description": "Set after credential is issued; maps to DepositPledgeAttestation.credential_id."
         }
       }
     }

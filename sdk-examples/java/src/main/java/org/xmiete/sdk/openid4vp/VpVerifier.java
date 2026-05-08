@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 public interface VpVerifier {
 
     /**
-     * Builds a VP request for a KautionsPfandNachweis presentation.
+     * Builds a VP request for a DepositPledgeAttestation presentation.
      * Returns a nonce (first element) and the serialized VpRequest JSON (second element).
      * The caller must store the nonce to pass to {@link #verifyVpToken} later.
      */

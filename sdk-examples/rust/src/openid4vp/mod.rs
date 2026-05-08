@@ -101,7 +101,7 @@ pub struct VerifiedClaims {
     pub credential_id: String,
     pub deposit_id: String,
     pub pledge_date: String,
-    pub legal_reference: String,
+    pub statutory_basis: String,
     pub issuing_bank: String,
     pub deposit_amount: Option<f64>,
     pub currency: Option<String>,
@@ -117,7 +117,7 @@ pub struct IssuerClaims {
     pub credential_id: String,
     pub deposit_id: String,
     pub pledge_date: String,
-    pub legal_reference: String,
+    pub statutory_basis: String,
     pub issuing_bank: String,
     pub issuing_bank_id: Option<String>,
     pub property_id: Option<String>,
@@ -161,7 +161,7 @@ pub fn build_vp_request_for_deposit(
             path: vec!["$.vct".to_string()],
             filter: Some(FieldFilter {
                 type_: "string".to_string(),
-                const_: Some("KautionsPfandNachweis".to_string()),
+                const_: Some("DepositPledgeAttestation".to_string()),
             }),
             optional: false,
         },
@@ -176,7 +176,7 @@ pub fn build_vp_request_for_deposit(
             optional: false,
         },
         Field {
-            path: vec!["$.legal_reference".to_string()],
+            path: vec!["$.statutory_basis".to_string()],
             filter: None,
             optional: false,
         },
@@ -225,9 +225,9 @@ pub fn build_vp_request_for_deposit(
         nonce: nonce.to_string(),
         state: state.to_string(),
         presentation_definition: PresentationDefinition {
-            id: "kautions-pfand-nachweis-pd".to_string(),
+            id: "deposit-pledge-attestation-pd".to_string(),
             input_descriptors: vec![InputDescriptor {
-                id: "kautions-pfand-nachweis".to_string(),
+                id: "deposit-pledge-attestation".to_string(),
                 format,
                 constraints: Constraints {
                     fields,
@@ -397,7 +397,7 @@ pub fn verify_sd_jwt_vp(
         credential_id: issuer_claims.credential_id,
         deposit_id: issuer_claims.deposit_id,
         pledge_date: issuer_claims.pledge_date,
-        legal_reference: issuer_claims.legal_reference,
+        statutory_basis: issuer_claims.statutory_basis,
         issuing_bank: issuer_claims.issuing_bank,
         deposit_amount: get_f64(&disclosed, "deposit_amount"),
         currency: get_str(&disclosed, "currency"),

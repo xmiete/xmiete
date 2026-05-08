@@ -65,12 +65,12 @@ public final class OpenId4VpModels {
         Optional<String> constValue                  // JSON key: "const"
     ) {}
 
-    /** Claims extracted from a successfully verified KautionsPfandNachweis VP. */
+    /** Claims extracted from a successfully verified DepositPledgeAttestation VP. */
     public record VerifiedClaims(
         String credentialId,
         String depositId,
         String pledgeDate,
-        String legalReference,
+        String statutoryBasis,
         String issuingBank,
         Optional<Double> depositAmount,
         Optional<String> currency,
@@ -86,7 +86,7 @@ public final class OpenId4VpModels {
         String credentialId,                         // JWT claim: "jti"
         String depositId,
         String pledgeDate,
-        String legalReference,
+        String statutoryBasis,
         String issuingBank,
         List<String> sdHashes,                       // JSON: "_sd" array
         long exp

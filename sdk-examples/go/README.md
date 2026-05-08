@@ -42,7 +42,7 @@ Tested providers: Generic BSI TR-03130 HTTP (built-in), AusweisApp2 SDK, Authada
 
 ## Roadmap
 
-- **QEAA Issuance Flow client** — Implement the bank-side OID4VCI Pre-Authorized Code Flow: create issuance sessions, generate SD-JWT `KautionsPfandNachweis` credentials, expose the token and credential endpoints. The reference implementation lives in the XMiete server (`server/internal/issuance/`); this SDK will expose it as a reusable library.
+- **QEAA Issuance Flow client** — Implement the bank-side OID4VCI Pre-Authorized Code Flow: create issuance sessions, generate SD-JWT `DepositPledgeAttestation` credentials, expose the token and credential endpoints. The reference implementation lives in the XMiete server (`server/internal/issuance/`); this SDK will expose it as a reusable library.
 
 ## How to Run
 

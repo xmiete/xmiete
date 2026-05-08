@@ -86,19 +86,18 @@ type DepositDetails struct {
 
 type Pledge struct {
 	PledgeDate        string `json:"pledge_date,omitempty"`
-	LegalReference    string `json:"legal_reference"`
+	StatutoryBasis    string `json:"statutory_basis"`
 	IsConfirmedByBank bool   `json:"is_confirmed_by_bank"`
 }
 
 // Trusteeship models the BGB § 551 Abs. 3 requirement for insolvency-proof separation.
 type Trusteeship struct {
-	IsTreuhand                        bool   `json:"is_treuhand"`
 	AccountType                       string `json:"account_type,omitempty"`
 	TrusteeEntity                     string `json:"trustee_entity,omitempty"`
 	TrustAccountIBAN                  string `json:"trust_account_iban,omitempty"`
 	InsolvencyProtectionConfirmed     bool   `json:"insolvency_protection_confirmed"`
 	InsolvencyProtectionConfirmedDate string `json:"insolvency_protection_confirmed_date,omitempty"`
-	LegalBasis                        string `json:"legal_basis,omitempty"`
+	StatutoryBasis                    string `json:"statutory_basis,omitempty"`
 }
 
 type Provider struct {

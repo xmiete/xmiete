@@ -182,7 +182,7 @@ func (s *Server) Pledge(w http.ResponseWriter, r *http.Request) {
 	updated, err := s.repo.UpdateState(r.Context(), id, models.StatePledged, entry, func(d *models.Deposit) {
 		d.Pledge = &models.Pledge{
 			PledgeDate:        req.PledgeDate,
-			LegalReference:    "BGB § 551",
+			StatutoryBasis:    "BGB § 551",
 			IsConfirmedByBank: true,
 		}
 	})

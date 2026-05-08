@@ -42,7 +42,7 @@ Tested providers: Generic BSI TR-03130 HTTP (built-in), AusweisApp2 SDK, Authada
 
 ## Roadmap
 
-- **QEAA Issuance Flow client** — Implement the bank-side OID4VCI Pre-Authorized Code Flow in Java: issuance session handling, SD-JWT `KautionsPfandNachweis` credential construction (using `nimbus-jose-jwt`), token endpoint client, and credential status polling. Priority language given Java's dominance in German banking infrastructure.
+- **QEAA Issuance Flow client** — Implement the bank-side OID4VCI Pre-Authorized Code Flow in Java: issuance session handling, SD-JWT `DepositPledgeAttestation` credential construction (using `nimbus-jose-jwt`), token endpoint client, and credential status polling. Priority language given Java's dominance in German banking infrastructure.
 
 ## How to Run
 

@@ -70,17 +70,16 @@ record DepositDetails(
     String lifecycleState
 ) {}
 
-record Pledge(String pledgeDate, String legalReference, boolean isConfirmedByBank) {}
+record Pledge(String pledgeDate, String statutoryBasis, boolean isConfirmedByBank) {}
 
 /** BGB § 551 Abs. 3 — insolvency-proof separation of deposit funds from the landlord's estate. */
 record Trusteeship(
-    boolean isTreuhand,
     String accountType,        // TREUHANDKONTO | ANDERKONTO | POOLED_TREUHAND
     String trusteeEntity,
     String trustAccountIban,
     boolean insolvencyProtectionConfirmed,
     String insolvencyProtectionConfirmedDate,
-    String legalBasis
+    String statutoryBasis
 ) {}
 
 record Provider(

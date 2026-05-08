@@ -32,7 +32,7 @@ import (
 	"github.com/xmiete/server/internal/models"
 )
 
-// Signer holds the ECDSA P-256 key used to sign KautionsPfandNachweis credentials.
+// Signer holds the ECDSA P-256 key used to sign DepositPledgeAttestation credentials.
 // In production, replace key generation with an HSM or KMS-backed key loader.
 type Signer struct {
 	once  sync.Once
@@ -87,7 +87,7 @@ func newSDDisclosure(name string, value any) (enc string, hash string, err error
 	return
 }
 
-// sdJWTClaims is the JWT payload for a KautionsPfandNachweis SD-JWT.
+// sdJWTClaims is the JWT payload for a DepositPledgeAttestation SD-JWT.
 // Fields under _sd are selectively disclosed; all other fields are always revealed.
 type sdJWTClaims struct {
 	jwt.RegisteredClaims
@@ -104,13 +104,13 @@ type sdJWTClaims struct {
 	// Non-selectively-disclosed claims (always revealed in every presentation)
 	DepositID      string `json:"deposit_id"`
 	PledgeDate     string `json:"pledge_date"`
-	LegalReference string `json:"legal_reference"`
+	StatutoryBasis string `json:"statutory_basis"`
 	IssuingBank    string `json:"issuing_bank"`
 	IssuingBankID  string `json:"issuing_bank_id,omitempty"`
 	PropertyID     string `json:"property_id,omitempty"`
 }
 
-// BuildSDJWT constructs and signs a KautionsPfandNachweis SD-JWT credential.
+// BuildSDJWT constructs and signs a DepositPledgeAttestation SD-JWT credential.
 //
 // Selectively disclosed claims (tenant can choose which to present):
 //   - deposit_amount, currency
@@ -118,7 +118,7 @@ type sdJWTClaims struct {
 //   - tenant_first_name, tenant_last_name
 //   - pledged_until
 //
-// Always-revealed claims: deposit_id, pledge_date, legal_reference, issuing_bank.
+// Always-revealed claims: deposit_id, pledge_date, statutory_basis, issuing_bank.
 //
 // Returns (sdJWTToken, credentialID, error).
 // The token format is: header.payload.signature~disclosure_1~...~disclosure_n~
@@ -191,12 +191,12 @@ func BuildSDJWT(issuerURL string, deposit *models.Deposit, validUntil string) (s
 			ExpiresAt: jwt.NewNumericDate(expiry),
 			ID:        credentialID,
 		},
-		VCT:            "KautionsPfandNachweis",
+		VCT:            "DepositPledgeAttestation",
 		SDAlg:          "sha-256",
 		SD:             sdHashes,
 		DepositID:      deposit.ID,
 		PledgeDate:     pledgeDate,
-		LegalReference: "BGB § 551",
+		StatutoryBasis: "BGB § 551",
 		IssuingBank:    bankName,
 		IssuingBankID:  bankID,
 		PropertyID:     deposit.Property.UnitID,

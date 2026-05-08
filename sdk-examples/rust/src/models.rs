@@ -94,20 +94,19 @@ pub struct DepositDetails {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Pledge {
     pub pledge_date: Option<NaiveDate>,
-    pub legal_reference: String,
+    pub statutory_basis: String,
     pub is_confirmed_by_bank: bool,
 }
 
 /// BGB § 551 Abs. 3 — insolvency-proof separation of deposit funds from the landlord's estate.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Trusteeship {
-    pub is_treuhand: bool,
     pub account_type: Option<String>,
     pub trustee_entity: Option<String>,
     pub trust_account_iban: Option<String>,
     pub insolvency_protection_confirmed: bool,
     pub insolvency_protection_confirmed_date: Option<NaiveDate>,
-    pub legal_basis: Option<String>,
+    pub statutory_basis: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

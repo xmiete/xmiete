@@ -76,11 +76,11 @@ For domestic use: the German eID (Online-Ausweisfunktion, BSI TR-03130) provides
 
 For European scale: the EUDI Wallet (eIDAS 2.0, Regulation (EU) 2024/1183) provides the interoperability layer. XMiete profiles the `wallet_metadata` object against the EUDI Architecture Reference Framework (ARF), supporting `PID`, `EAA`, and `QEAA` credential types in `vc+sd-jwt` and `mso_mdoc` formats.
 
-### 4.3 Credential Layer — KautionsPfandNachweis
+### 4.3 Credential Layer — DepositPledgeAttestation
 
-The **KautionsPfandNachweis** is a QEAA (Qualified Electronic Attestation of Attributes) credential issued by a bank into the tenant's EUDI Wallet upon deposit pledge. It is the machine-readable, legally binding proof that replaces the paper pledge confirmation letter.
+The **DepositPledgeAttestation** is a QEAA (Qualified Electronic Attestation of Attributes) credential issued by a bank into the tenant's EUDI Wallet upon deposit pledge. It is the machine-readable, legally binding proof that replaces the paper pledge confirmation letter.
 
-The credential is defined within the XMiete schema (`definitions/kautions_pfand_nachweis`) and follows the OpenID for Verifiable Credential Issuance (OID4VCI) specification, Pre-Authorized Code Flow. Key properties:
+The credential is defined within the XMiete schema (`definitions/deposit_pledge_attestation`) and follows the OpenID for Verifiable Credential Issuance (OID4VCI) specification, Pre-Authorized Code Flow. Key properties:
 
 - Format: `vc+sd-jwt`
 - Assurance level: `high` (eIDAS Article 8, LoA High)
@@ -108,7 +108,7 @@ XMiete does not create new law. It operationalises existing law.
 
 **BGB §§ 1204 ff.** (Pfandrecht an beweglichen Sachen) governs the pledge mechanism. The `pledge` object in the XMiete schema maps directly to the legal elements of a valid pledge agreement.
 
-**eIDAS Regulation (EU) No 910/2014 as amended by (EU) 2024/1183** provides the legal basis for EUDI Wallet credentials. A KautionsPfandNachweis issued by a regulated bank as a QEAA has the same legal standing across all 27 EU member states as a bank-issued paper document — this is the legal mechanism that makes the pan-European extension possible without harmonising national tenancy law.
+**eIDAS Regulation (EU) No 910/2014 as amended by (EU) 2024/1183** provides the legal basis for EUDI Wallet credentials. A DepositPledgeAttestation issued by a regulated bank as a QEAA has the same legal standing across all 27 EU member states as a bank-issued paper document — this is the legal mechanism that makes the pan-European extension possible without harmonising national tenancy law.
 
 **ISO 20022** (financial messaging) ensures that the EBICS transport profile is interoperable with existing bank payment infrastructure. `pain.001` and `camt.054` are already implemented by every major German bank for SEPA processing.
 
@@ -132,7 +132,7 @@ XMiete follows the adoption model that has proven effective for xRechnung and xB
 
 | Stakeholder | Role | Value proposition |
 |---|---|---|
-| **Banks** (Sparkassen, Volksbanken, private banks) | Primary implementers; issue KautionsPfandNachweis | Single API contract for all markets; reduced KYC costs via EUDI Wallet re-use; EBICS-native integration |
+| **Banks** (Sparkassen, Volksbanken, private banks) | Primary implementers; issue DepositPledgeAttestation | Single API contract for all markets; reduced KYC costs via EUDI Wallet re-use; EBICS-native integration |
 | **Property management software** (Hausverwaltungssoftware) | Consume XMiete objects; trigger pledge workflows | Machine-readable confirmation replaces manual paper filing; audit-ready lifecycle history |
 | **Fintech deposit platforms** (Smartmiete, GetMomo, PlusForta et al.) | Implement XMiete as output format | Interoperability with landlord systems; regulatory alignment; portability of tenant identity |
 | **Housing associations & landlords** | Receive pledge confirmations | Digital-first onboarding; no paper; verifiable via EUDI Wallet |

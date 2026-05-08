@@ -91,7 +91,7 @@ impl VpVerifierService {
                 .to_string(),
             deposit_id: get_str("deposit_id")?,
             pledge_date: get_str("pledge_date")?,
-            legal_reference: get_str("legal_reference")?,
+            statutory_basis: get_str("statutory_basis")?,
             issuing_bank: get_str("issuing_bank")?,
             issuing_bank_id: payload
                 .get("issuing_bank_id")

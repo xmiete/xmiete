@@ -10,7 +10,7 @@ XMiete Core provides a unified JSON schema, OpenAPI specification, and reference
 
 - **Modular Schema** — Supports `CASH_EQUIVALENT`, `BANK_GUARANTEE`, and `INSURANCE` deposit types.
 - **eID Integration** — Built-in eID verification status and EUDI Wallet credential presentation (PID, EAA, QEAA, MDL).
-- **QEAA Issuance Flow** — Banks can issue a legally-binding *KautionsPfandNachweis* QEAA directly into the tenant's EUDI Wallet via OpenID4VCI Pre-Authorized Code Flow. The SD-JWT credential replaces the physical pledge certificate and is legally recognized across the EU under eIDAS 2.0.
+- **QEAA Issuance Flow** — Banks can issue a legally-binding *DepositPledgeAttestation* QEAA directly into the tenant's EUDI Wallet via OpenID4VCI Pre-Authorized Code Flow. The SD-JWT credential replaces the physical pledge certificate and is legally recognized across the EU under eIDAS 2.0.
 - **Selective Disclosure** — Tenants control which credential claims to share (e.g., deposit amount without revealing their name).
 - **Credential Revocation** — Status endpoint for verifiers; credentials are automatically revoked when the deposit is released or closed.
 - **Legal Compliance** — Designed for BGB § 551 and eIDAS 2.0 / EUDI ARF requirements.
@@ -66,13 +66,13 @@ Bank  →  POST /v1/deposits/{id}/issue-credential
 Wallet →  GET  /v1/credential-offers/{sessionId}
        →  POST /v1/token   (pre-authorized_code grant)
        →  POST /v1/credential
-       ←  { credential: "<KautionsPfandNachweis SD-JWT>" }
+       ←  { credential: "<DepositPledgeAttestation SD-JWT>" }
 
 Verifier →  GET /v1/credentials/{id}/status
          ←  { status: "active" | "revoked" }
 ```
 
-See [`examples/qeaa_kautions_nachweis.json`](examples/qeaa_kautions_nachweis.json) for a decoded credential example.
+See [`examples/qeaa_deposit_pledge_attestation.json`](examples/qeaa_deposit_pledge_attestation.json) for a decoded credential example.
 
 ## Stakeholders
 

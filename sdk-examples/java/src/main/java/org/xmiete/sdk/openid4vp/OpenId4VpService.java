@@ -32,7 +32,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Standard OpenID4VP service for KautionsPfandNachweis SD-JWT VC presentations.
+ * Standard OpenID4VP service for DepositPledgeAttestation SD-JWT VC presentations.
  * Uses Java 11 HttpClient only — no external dependencies.
  */
 public class OpenId4VpService implements VpVerifier {
@@ -54,11 +54,11 @@ public class OpenId4VpService implements VpVerifier {
 
         List<Field> fields = List.of(
             new Field(List.of("$.vct"),
-                Optional.of(new FieldFilter("string", Optional.of("KautionsPfandNachweis"))),
+                Optional.of(new FieldFilter("string", Optional.of("DepositPledgeAttestation"))),
                 false),
             new Field(List.of("$.deposit_id"), Optional.empty(), false),
             new Field(List.of("$.pledge_date"), Optional.empty(), false),
-            new Field(List.of("$.legal_reference"), Optional.empty(), false),
+            new Field(List.of("$.statutory_basis"), Optional.empty(), false),
             new Field(List.of("$.issuing_bank"), Optional.empty(), false),
             new Field(List.of("$.deposit_amount"), Optional.empty(), false),
             new Field(List.of("$.pledged_until"), Optional.empty(), true)
@@ -67,7 +67,7 @@ public class OpenId4VpService implements VpVerifier {
         Constraints constraints = new Constraints(fields, "required");
 
         InputDescriptor descriptor = new InputDescriptor(
-            "kautions_pfand_nachweis",
+            "deposit_pledge_attestation",
             Map.of("vc+sd-jwt", new FormatAlgs(List.of("ES256"))),
             constraints
         );
@@ -125,7 +125,7 @@ public class OpenId4VpService implements VpVerifier {
             String credentialId  = extractJsonString(issuerPayloadJson, "jti");
             String depositId     = extractJsonString(issuerPayloadJson, "deposit_id");
             String pledgeDate    = extractJsonString(issuerPayloadJson, "pledge_date");
-            String legalRef      = extractJsonString(issuerPayloadJson, "legal_reference");
+            String legalRef      = extractJsonString(issuerPayloadJson, "statutory_basis");
             String issuingBank   = extractJsonString(issuerPayloadJson, "issuing_bank");
             List<String> sdHashes = extractJsonArray(issuerPayloadJson, "_sd");
             long exp              = extractJsonLong(issuerPayloadJson, "exp");

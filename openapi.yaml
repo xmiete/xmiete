@@ -144,7 +144,7 @@ paths:
         Called by the bank after a deposit is PLEDGED. Creates an OID4VCI Pre-Authorized Code
         issuance session and returns a `credential_offer_url` that the tenant scans with their
         EUDI Wallet. The wallet then follows the Pre-Authorized Code Flow to obtain the
-        **KautionsPfandNachweis** QEAA.
+        **DepositPledgeAttestation** QEAA.
 
         Requires the deposit to be in `PLEDGED` state.
       operationId: issueCredential
@@ -226,10 +226,10 @@ paths:
 
   /credential:
     post:
-      summary: Credential endpoint — issue KautionsPfandNachweis SD-JWT (OID4VCI)
+      summary: Credential endpoint — issue DepositPledgeAttestation SD-JWT (OID4VCI)
       description: |
         Wallet presents its access token and (optionally) a proof-of-possession JWT.
-        Server returns the signed **KautionsPfandNachweis** SD-JWT credential.
+        Server returns the signed **DepositPledgeAttestation** SD-JWT credential.
       operationId: credentialEndpoint
       security:
         - CredentialBearerAuth: []
@@ -253,7 +253,7 @@ paths:
     get:
       summary: Credential status / revocation check
       description: |
-        Public endpoint — verifiers poll this to confirm whether a KautionsPfandNachweis
+        Public endpoint — verifiers poll this to confirm whether a DepositPledgeAttestation
         credential is still active or has been revoked (e.g., because the deposit was
         released or the tenancy ended).
       operationId: credentialStatus
@@ -293,7 +293,7 @@ paths:
   /.well-known/jwks.json:
     get:
       summary: JSON Web Key Set — issuer signing keys
-      description: Public keys for verifying KautionsPfandNachweis SD-JWT signatures.
+      description: Public keys for verifying DepositPledgeAttestation SD-JWT signatures.
       operationId: jwks
       security: []
       responses:
@@ -455,7 +455,7 @@ components:
           type: array
           items:
             type: string
-          example: ['KautionsPfandNachweis']
+          example: ['DepositPledgeAttestation']
         grants:
           type: object
           properties:
@@ -493,7 +493,7 @@ components:
           enum: ['vc+sd-jwt']
         vct:
           type: string
-          enum: ['KautionsPfandNachweis']
+          enum: ['DepositPledgeAttestation']
         proof:
           type: object
           properties:
@@ -511,11 +511,11 @@ components:
         credential:
           type: string
           description: |
-            Signed KautionsPfandNachweis SD-JWT.
+            Signed DepositPledgeAttestation SD-JWT.
             Format: <header>.<payload>.<signature>~<disclosure_1>~...~<disclosure_n>~
             Selectively disclosed: deposit_amount, currency, property_address,
             tenant_first_name, tenant_last_name, pledged_until.
-            Always revealed: deposit_id, pledge_date, legal_reference, issuing_bank.
+            Always revealed: deposit_id, pledge_date, statutory_basis, issuing_bank.
           example: "eyJ....~WyJzYWx0IiwiZGVwb3NpdF9hbW91bnQiLDMwMDBd~..."
 
     CredentialStatusResponse:

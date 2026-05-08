@@ -15,7 +15,7 @@
  */
 package api
 
-// OpenID4VCI credential issuance endpoints for the KautionsPfandNachweis QEAA.
+// OpenID4VCI credential issuance endpoints for the DepositPledgeAttestation QEAA.
 //
 // Flow (Pre-Authorized Code, RFC 9396):
 //   Bank → POST /v1/deposits/{id}/issue-credential
@@ -130,7 +130,7 @@ func (s *Server) GetCredentialOffer(w http.ResponseWriter, r *http.Request) {
 
 	offer := credentialOffer{
 		CredentialIssuer:           s.issuerURL,
-		CredentialConfigurationIDs: []string{"KautionsPfandNachweis"},
+		CredentialConfigurationIDs: []string{"DepositPledgeAttestation"},
 		Grants: grants{
 			PreAuth: preAuthGrant{PreAuthorizedCode: sess.PreAuthorizedCode},
 		},
@@ -212,9 +212,9 @@ func (s *Server) Credential(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid JSON", "BAD_REQUEST")
 		return
 	}
-	if req.Format != "vc+sd-jwt" || req.VCT != "KautionsPfandNachweis" {
+	if req.Format != "vc+sd-jwt" || req.VCT != "DepositPledgeAttestation" {
 		writeError(w, http.StatusBadRequest,
-			"unsupported credential format or type; use format=vc+sd-jwt vct=KautionsPfandNachweis",
+			"unsupported credential format or type; use format=vc+sd-jwt vct=DepositPledgeAttestation",
 			"UNSUPPORTED_CREDENTIAL_TYPE")
 		return
 	}
@@ -314,10 +314,10 @@ func (s *Server) IssuerMetadata(w http.ResponseWriter, r *http.Request) {
 		TokenEndpoint:      base + "/v1/token",
 		JWKsURI:            base + "/.well-known/jwks.json",
 		CredentialConfigurationsSupported: map[string]credConfig{
-			"KautionsPfandNachweis": {
+			"DepositPledgeAttestation": {
 				Format:                      "vc+sd-jwt",
-				VCT:                         "KautionsPfandNachweis",
-				Scope:                       "KautionsPfandNachweis",
+				VCT:                         "DepositPledgeAttestation",
+				Scope:                       "DepositPledgeAttestation",
 				CryptographicBindingMethods: []string{"did:key", "jwk"},
 				CredentialSigningAlgValues:  []string{"ES256"},
 				ProofTypesSupported: map[string]proofAlgs{
@@ -325,12 +325,12 @@ func (s *Server) IssuerMetadata(w http.ResponseWriter, r *http.Request) {
 				},
 				Display: []display{
 					{
-						Name:        "Kautionspfand-Nachweis",
+						Name:        "Deposit Pledge Attestation",
 						Locale:      "de-DE",
 						Description: "Bestätigung einer rechtssicheren Mietkautionsverpfändung nach BGB § 551",
 					},
 					{
-						Name:        "Rental Deposit Pledge Certificate",
+						Name:        "Deposit Pledge Attestation",
 						Locale:      "en-US",
 						Description: "Confirmation of a legally binding rental deposit pledge under BGB § 551",
 					},
@@ -340,7 +340,7 @@ func (s *Server) IssuerMetadata(w http.ResponseWriter, r *http.Request) {
 					"currency":         {Display: []display{{Name: "Währung", Locale: "de-DE"}}, Mandatory: true, SD: true},
 					"pledge_date":      {Display: []display{{Name: "Verpfändungsdatum", Locale: "de-DE"}}, Mandatory: true, SD: false},
 					"pledged_until":    {Display: []display{{Name: "Verpfändet bis", Locale: "de-DE"}}, Mandatory: false, SD: true},
-					"legal_reference":  {Display: []display{{Name: "Rechtsgrundlage", Locale: "de-DE"}}, Mandatory: true, SD: false},
+					"statutory_basis":  {Display: []display{{Name: "Rechtsgrundlage", Locale: "de-DE"}}, Mandatory: true, SD: false},
 					"issuing_bank":     {Display: []display{{Name: "Ausstellende Bank", Locale: "de-DE"}}, Mandatory: true, SD: false},
 					"property_address": {Display: []display{{Name: "Mietobjekt-Adresse", Locale: "de-DE"}}, Mandatory: false, SD: true},
 					"tenant_first_name": {Display: []display{{Name: "Vorname Mieter", Locale: "de-DE"}}, Mandatory: false, SD: true},
