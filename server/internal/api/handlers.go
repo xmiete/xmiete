@@ -9,17 +9,25 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/xmiete/server/internal/db"
+	"github.com/xmiete/server/internal/issuance"
 	"github.com/xmiete/server/internal/models"
 	"github.com/xmiete/server/internal/statemachine"
 )
 
 type Server struct {
-	repo        db.Repository
-	webhookURL  string // optional; POST state-change events here
+	repo       db.Repository
+	webhookURL string // optional; POST state-change events here
+	sessions   *issuance.Store
+	issuerURL  string // base URL for OID4VCI endpoints, e.g. https://api.xmiete.org
 }
 
-func NewServer(repo db.Repository, webhookURL string) *Server {
-	return &Server{repo: repo, webhookURL: webhookURL}
+func NewServer(repo db.Repository, webhookURL, issuerURL string) *Server {
+	return &Server{
+		repo:      repo,
+		webhookURL: webhookURL,
+		sessions:  issuance.NewStore(),
+		issuerURL: issuerURL,
+	}
 }
 
 // POST /deposits

@@ -154,8 +154,26 @@ type ErrorResponse struct {
 }
 
 type WebhookEvent struct {
-	EventType string         `json:"event_type"`
-	DepositID string         `json:"deposit_id"`
-	NewState  LifecycleState `json:"new_state"`
-	Timestamp time.Time      `json:"timestamp"`
+	EventType          string         `json:"event_type"`
+	DepositID          string         `json:"deposit_id"`
+	NewState           LifecycleState `json:"new_state"`
+	Timestamp          time.Time      `json:"timestamp"`
+	CredentialOfferURL string         `json:"credential_offer_url,omitempty"` // set on deposit.pledged when QEAA offer is created
+}
+
+// ── QEAA Issuance request/response models ─────────────────────────────────────
+
+// IssueCredentialRequest is sent by the bank to trigger QEAA issuance after pledge.
+type IssueCredentialRequest struct {
+	// ValidUntil is the ISO 8601 date until which the pledge is in effect (optional).
+	// Drives the credential expiry and the pledged_until selectively-disclosed claim.
+	ValidUntil string `json:"valid_until,omitempty"`
+}
+
+// IssueCredentialResponse is returned to the bank with the credential offer.
+type IssueCredentialResponse struct {
+	SessionID          string    `json:"session_id"`
+	CredentialOfferURL string    `json:"credential_offer_url"`
+	QRCodePayload      string    `json:"qr_code_payload"`
+	ExpiresAt          time.Time `json:"expires_at"`
 }

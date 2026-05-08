@@ -16,7 +16,8 @@ func main() {
 	dsn := mustEnv("DATABASE_URL")
 	jwtSecret := mustEnv("JWT_SECRET")
 	port := envOrDefault("PORT", "8080")
-	webhookURL := os.Getenv("WEBHOOK_URL") // optional
+	webhookURL := os.Getenv("WEBHOOK_URL")                                          // optional
+	issuerURL := envOrDefault("ISSUER_URL", "https://api.xmiete.org")               // OID4VCI base URL
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -27,7 +28,7 @@ func main() {
 	}
 	defer repo.Close()
 
-	srv := api.NewServer(repo, webhookURL)
+	srv := api.NewServer(repo, webhookURL, issuerURL)
 	router := api.NewRouter(srv, jwtSecret)
 
 	addr := fmt.Sprintf(":%s", port)

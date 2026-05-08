@@ -187,6 +187,113 @@
         "city": { "type": "string" },
         "country": { "type": "string", "pattern": "^[A-Z]{2}$", "default": "DE" }
       }
+    },
+    "kautions_pfand_nachweis": {
+      "type": "object",
+      "description": "QEAA credential schema for KautionsPfandNachweis — issued by a bank into the tenant's EUDI Wallet after deposit pledge. Format: SD-JWT (vc+sd-jwt). Governed by OpenID4VCI Pre-Authorized Code Flow.",
+      "required": ["deposit_id", "pledge_date", "legal_reference", "issuing_bank"],
+      "properties": {
+        "deposit_id": {
+          "type": "string",
+          "description": "XMiete deposit identifier that this credential attests."
+        },
+        "deposit_amount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "[Selectively Disclosed] Amount of the pledged deposit in euros."
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "default": "EUR",
+          "description": "[Selectively Disclosed] ISO 4217 currency code."
+        },
+        "pledge_date": {
+          "type": "string",
+          "format": "date",
+          "description": "ISO 8601 date on which the deposit was legally pledged."
+        },
+        "pledged_until": {
+          "type": "string",
+          "format": "date",
+          "description": "[Selectively Disclosed] ISO 8601 date until which the pledge is in effect (typically end of tenancy)."
+        },
+        "legal_reference": {
+          "type": "string",
+          "default": "BGB § 551",
+          "description": "Legal basis for the pledge (always revealed)."
+        },
+        "issuing_bank": {
+          "type": "string",
+          "description": "Full legal name of the bank issuing the credential (e.g., 'Aareal Bank AG')."
+        },
+        "issuing_bank_id": {
+          "type": "string",
+          "description": "URI or DID identifying the issuing bank (e.g., 'https://aareal.bank' or 'did:web:aareal.bank')."
+        },
+        "property_id": {
+          "type": "string",
+          "description": "Optional opaque property or unit identifier from the landlord's system."
+        },
+        "property_address": {
+          "type": "string",
+          "description": "[Selectively Disclosed] Human-readable address of the rental property."
+        },
+        "tenant_first_name": {
+          "type": "string",
+          "description": "[Selectively Disclosed] First name of the tenant."
+        },
+        "tenant_last_name": {
+          "type": "string",
+          "description": "[Selectively Disclosed] Last name of the tenant."
+        },
+        "credential_id": {
+          "type": "string",
+          "pattern": "^urn:xmiete:credential:[0-9a-f-]{36}$",
+          "description": "Globally unique credential identifier (maps to JWT 'jti' claim)."
+        },
+        "credential_format": {
+          "type": "string",
+          "const": "vc+sd-jwt",
+          "description": "Credential encoding format — always vc+sd-jwt for KautionsPfandNachweis."
+        },
+        "assurance_level": {
+          "type": "string",
+          "const": "high",
+          "description": "eIDAS Level of Assurance — always 'high' for QEAA."
+        },
+        "issuance_flow": {
+          "type": "string",
+          "const": "OpenID4VCI Pre-Authorized Code Flow",
+          "description": "OID4VCI grant type used for issuance."
+        },
+        "status_uri": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL at which verifiers can check the current status (active/revoked) of this credential."
+        }
+      }
+    },
+    "issuance_session": {
+      "type": "object",
+      "description": "Tracks the state of an active OID4VCI issuance session for a deposit.",
+      "properties": {
+        "session_id": { "type": "string" },
+        "credential_offer_url": {
+          "type": "string",
+          "description": "openid-credential-offer:// deep-link / QR payload for the tenant's wallet."
+        },
+        "state": {
+          "type": "string",
+          "enum": ["PENDING", "CONSUMED", "REVOKED"],
+          "description": "PENDING: offer issued, wallet has not yet fetched credential. CONSUMED: credential successfully issued. REVOKED: credential invalidated (deposit released/closed)."
+        },
+        "expires_at": { "type": "string", "format": "date-time" },
+        "credential_id": {
+          "type": "string",
+          "description": "Set after credential is issued; maps to KautionsPfandNachweis.credential_id."
+        }
+      }
     }
   }
 }

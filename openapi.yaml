@@ -131,6 +131,172 @@ paths:
       responses:
         '200':
           description: Claimed
+
+  # ── QEAA Issuance Flow ────────────────────────────────────────────────────────
+
+  /deposits/{id}/issue-credential:
+    post:
+      summary: Trigger QEAA credential issuance (bank → tenant wallet)
+      description: |
+        Called by the bank after a deposit is PLEDGED. Creates an OID4VCI Pre-Authorized Code
+        issuance session and returns a `credential_offer_url` that the tenant scans with their
+        EUDI Wallet. The wallet then follows the Pre-Authorized Code Flow to obtain the
+        **KautionsPfandNachweis** QEAA.
+
+        Requires the deposit to be in `PLEDGED` state.
+      operationId: issueCredential
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueCredentialRequest'
+      responses:
+        '201':
+          description: Issuance session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueCredentialResponse'
+        '409':
+          description: Deposit is not in PLEDGED state
+
+  /credential-offers/{sessionId}:
+    get:
+      summary: Fetch credential offer (OID4VCI)
+      description: |
+        Called by the EUDI Wallet to retrieve the `CredentialOffer` object. This URL is
+        embedded in the `credential_offer_uri` query parameter of the deep-link.
+      operationId: getCredentialOffer
+      security: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: CredentialOffer object per OID4VCI spec
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialOffer'
+        '410':
+          description: Offer has expired
+
+  /token:
+    post:
+      summary: Token endpoint — pre-authorized_code grant (OID4VCI)
+      description: |
+        EUDI Wallet exchanges the `pre-authorized_code` for a short-lived Bearer access token
+        and a `c_nonce` for proof-of-possession.
+      operationId: tokenEndpoint
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [grant_type, pre-authorized_code]
+              properties:
+                grant_type:
+                  type: string
+                  enum: ['urn:ietf:params:oauth:grant-type:pre-authorized_code']
+                pre-authorized_code:
+                  type: string
+      responses:
+        '200':
+          description: Access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Invalid or expired pre-authorized_code
+
+  /credential:
+    post:
+      summary: Credential endpoint — issue KautionsPfandNachweis SD-JWT (OID4VCI)
+      description: |
+        Wallet presents its access token and (optionally) a proof-of-possession JWT.
+        Server returns the signed **KautionsPfandNachweis** SD-JWT credential.
+      operationId: credentialEndpoint
+      security:
+        - CredentialBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialRequest'
+      responses:
+        '200':
+          description: Signed SD-JWT credential
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialResponse'
+        '401':
+          description: Invalid or expired access token
+
+  /credentials/{credentialId}/status:
+    get:
+      summary: Credential status / revocation check
+      description: |
+        Public endpoint — verifiers poll this to confirm whether a KautionsPfandNachweis
+        credential is still active or has been revoked (e.g., because the deposit was
+        released or the tenancy ended).
+      operationId: credentialStatus
+      security: []
+      parameters:
+        - name: credentialId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Credential status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialStatusResponse'
+        '404':
+          description: Credential not found
+
+  /.well-known/openid-credential-issuer:
+    get:
+      summary: OID4VCI issuer metadata (wallet discovery)
+      description: |
+        Returns the issuer metadata document per OpenID4VCI § 11.2.
+        EUDI Wallets fetch this to learn supported credential types, formats, and endpoints.
+      operationId: issuerMetadata
+      security: []
+      responses:
+        '200':
+          description: Issuer metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssuerMetadata'
+
+  /.well-known/jwks.json:
+    get:
+      summary: JSON Web Key Set — issuer signing keys
+      description: Public keys for verifying KautionsPfandNachweis SD-JWT signatures.
+      operationId: jwks
+      security: []
+      responses:
+        '200':
+          description: JWKS document
+
 components:
   schemas:
     WalletMetadata:
@@ -173,10 +339,148 @@ components:
           type: string
           format: date-time
           description: Expiry timestamp of the wallet credential.
+    # ── QEAA Issuance schemas ──────────────────────────────────────────────────
+
+    IssueCredentialRequest:
+      type: object
+      properties:
+        valid_until:
+          type: string
+          format: date
+          description: ISO 8601 date until which the pledge is in effect (drives credential expiry and pledged_until claim).
+
+    IssueCredentialResponse:
+      type: object
+      required: [session_id, credential_offer_url, qr_code_payload, expires_at]
+      properties:
+        session_id:
+          type: string
+          description: Opaque issuance session identifier.
+        credential_offer_url:
+          type: string
+          description: "openid-credential-offer:// deep-link for the tenant's wallet (same as qr_code_payload)."
+        qr_code_payload:
+          type: string
+          description: String to encode in a QR code shown to the tenant.
+        expires_at:
+          type: string
+          format: date-time
+          description: Time after which the offer expires (15 minutes from creation).
+
+    CredentialOffer:
+      type: object
+      required: [credential_issuer, credential_configuration_ids, grants]
+      properties:
+        credential_issuer:
+          type: string
+          description: Base URL of the credential issuer.
+        credential_configuration_ids:
+          type: array
+          items:
+            type: string
+          example: ['KautionsPfandNachweis']
+        grants:
+          type: object
+          properties:
+            'urn:ietf:params:oauth:grant-type:pre-authorized_code':
+              type: object
+              properties:
+                pre-authorized_code:
+                  type: string
+
+    TokenResponse:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          example: 300
+        c_nonce:
+          type: string
+          description: Nonce for proof-of-possession JWT (used in credential request).
+        c_nonce_expires_in:
+          type: integer
+          example: 300
+
+    CredentialRequest:
+      type: object
+      required: [format, vct]
+      properties:
+        format:
+          type: string
+          enum: ['vc+sd-jwt']
+        vct:
+          type: string
+          enum: ['KautionsPfandNachweis']
+        proof:
+          type: object
+          properties:
+            proof_type:
+              type: string
+              enum: ['jwt']
+            jwt:
+              type: string
+              description: Proof-of-possession JWT signed by the wallet's key binding key.
+
+    CredentialResponse:
+      type: object
+      required: [credential]
+      properties:
+        credential:
+          type: string
+          description: |
+            Signed KautionsPfandNachweis SD-JWT.
+            Format: <header>.<payload>.<signature>~<disclosure_1>~...~<disclosure_n>~
+            Selectively disclosed: deposit_amount, currency, property_address,
+            tenant_first_name, tenant_last_name, pledged_until.
+            Always revealed: deposit_id, pledge_date, legal_reference, issuing_bank.
+          example: "eyJ....~WyJzYWx0IiwiZGVwb3NpdF9hbW91bnQiLDMwMDBd~..."
+
+    CredentialStatusResponse:
+      type: object
+      required: [credential_id, status, checked_at]
+      properties:
+        credential_id:
+          type: string
+        status:
+          type: string
+          enum: ['active', 'revoked', 'unknown']
+          description: active = pledge still in force; revoked = deposit released or closed.
+        checked_at:
+          type: string
+          format: date-time
+
+    IssuerMetadata:
+      type: object
+      description: OID4VCI issuer metadata per OpenID4VCI § 11.2.
+      properties:
+        credential_issuer:
+          type: string
+        credential_endpoint:
+          type: string
+        token_endpoint:
+          type: string
+        jwks_uri:
+          type: string
+        credential_configurations_supported:
+          type: object
+          description: Map of credential configuration ID to configuration object.
+
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: JWT signed with JWT_SECRET — used for deposit lifecycle endpoints.
+    CredentialBearerAuth:
+      type: http
+      scheme: bearer
+      description: Short-lived access token issued by POST /v1/token — used for POST /v1/credential.
+
 security:
   - BearerAuth: []

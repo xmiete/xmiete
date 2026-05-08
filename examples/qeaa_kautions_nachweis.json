@@ -1,0 +1,61 @@
+{
+  "$comment": "Example KautionsPfandNachweis QEAA credential — decoded SD-JWT claims for reference. Wire format is: header.payload.signature~disclosure_1~...~disclosure_n~",
+
+  "issuance_flow": "OpenID4VCI Pre-Authorized Code Flow",
+  "credential_format": "vc+sd-jwt",
+  "credential_type": "QEAA",
+  "assurance_level": "high",
+
+  "sd_jwt_header": {
+    "alg": "ES256",
+    "typ": "vc+sd-jwt",
+    "kid": "<issuer-key-id>"
+  },
+
+  "sd_jwt_payload": {
+    "iss": "https://api.xmiete.org",
+    "sub": "mieter@example.de",
+    "iat": 1746700800,
+    "exp": 1778323200,
+    "jti": "urn:xmiete:credential:550e8400-e29b-41d4-a716-446655440000",
+    "vct": "KautionsPfandNachweis",
+    "_sd_alg": "sha-256",
+    "_sd": [
+      "X1sdO3wG4Kj8...hash_of_deposit_amount_disclosure",
+      "aP9rTy2Mn7Qz...hash_of_currency_disclosure",
+      "bK4uVw3Xs8Lp...hash_of_property_address_disclosure",
+      "cR6mYn1Qt5Je...hash_of_tenant_first_name_disclosure",
+      "dS7oZp2Ru6Kf...hash_of_tenant_last_name_disclosure",
+      "eT8pAq3Sv7Lg...hash_of_pledged_until_disclosure"
+    ],
+    "deposit_id": "dep_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "pledge_date": "2026-05-08",
+    "legal_reference": "BGB § 551",
+    "issuing_bank": "Aareal Bank AG",
+    "issuing_bank_id": "https://aareal.bank",
+    "property_id": "UNIT-042-OG2"
+  },
+
+  "disclosures_decoded": {
+    "$comment": "Each disclosure is base64url(JSON array ['salt','claim_name',value]). The wallet selects which to include in a presentation.",
+    "deposit_amount":    ["<random-salt>", "deposit_amount",    3000.00],
+    "currency":          ["<random-salt>", "currency",          "EUR"],
+    "property_address":  ["<random-salt>", "property_address",  "Musterstraße 42, 10115 Berlin, DE"],
+    "tenant_first_name": ["<random-salt>", "tenant_first_name", "Erika"],
+    "tenant_last_name":  ["<random-salt>", "tenant_last_name",  "Mustermann"],
+    "pledged_until":     ["<random-salt>", "pledged_until",     "2027-04-30"]
+  },
+
+  "status_endpoint": "https://api.xmiete.org/v1/credentials/urn:xmiete:credential:550e8400-e29b-41d4-a716-446655440000/status",
+
+  "human_readable_summary": {
+    "de": "Aareal Bank AG bestätigt: 3.000 € Mietkaution für Musterstraße 42, 10115 Berlin sind gemäß BGB § 551 rechtssicher verpfändet. Gültig bis 30.04.2027.",
+    "en": "Aareal Bank AG confirms: EUR 3,000 rental deposit for Musterstraße 42, 10115 Berlin is legally pledged under BGB § 551. Valid until 30 Apr 2027."
+  },
+
+  "presentation_example": {
+    "$comment": "When a landlord or verifier requests proof, the tenant's wallet presents a subset of disclosures. Here the tenant reveals deposit_amount and pledged_until but NOT their name.",
+    "disclosed_claims": ["deposit_amount", "currency", "pledged_until"],
+    "withheld_claims":  ["tenant_first_name", "tenant_last_name", "property_address"]
+  }
+}
