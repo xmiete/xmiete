@@ -300,7 +300,8 @@ func (s *Server) GetReceipt(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch d.Deposit.LifecycleState {
-	case models.StatePledged, models.StateReleased, models.StateClaimed, models.StateClosed:
+	case models.StatePledged, models.StateReleased, models.StateClaimed,
+		models.StatePartiallyReleased, models.StateSettleProposed, models.StateDisputed, models.StateClosed:
 		// receipt available
 	default:
 		writeError(w, http.StatusConflict,
@@ -652,6 +653,182 @@ func (s *Server) DisputeResolve(w http.ResponseWriter, r *http.Request) {
 		d.Settlement.AgreedTenantRefund = req.AgreedTenantRefund
 		d.Settlement.AgreedLandlordRetention = req.AgreedLandlordRetention
 		d.Settlement.ExternalReference = req.ResolutionReference
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update deposit", "INTERNAL_ERROR")
+		return
+	}
+
+	s.fireWebhook(updated)
+	writeJSON(w, http.StatusOK, updated)
+}
+
+// POST /deposits/{id}/partial-release
+// Landlord releases most of the deposit immediately and holds back a reservation
+// while the utility reconciliation is pending. PLEDGED → PARTIALLY_RELEASED.
+func (s *Server) PartialRelease(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	var req models.PartialReleaseRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON", "BAD_REQUEST")
+		return
+	}
+	if req.ReleasedAmount < 0 || req.ReservedAmount <= 0 {
+		writeError(w, http.StatusBadRequest, "released_amount must be ≥ 0 and reserved_amount must be > 0", "VALIDATION_ERROR")
+		return
+	}
+	if req.BillingPeriodEnd == "" {
+		writeError(w, http.StatusBadRequest, "billing_period_end is required", "VALIDATION_ERROR")
+		return
+	}
+	billingEnd, err := time.Parse("2006-01-02", req.BillingPeriodEnd)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "billing_period_end must be ISO 8601 date (YYYY-MM-DD)", "VALIDATION_ERROR")
+		return
+	}
+
+	current, err := s.repo.GetByID(r.Context(), id)
+	if errors.Is(err, db.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "deposit not found", "NOT_FOUND")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to fetch deposit", "INTERNAL_ERROR")
+		return
+	}
+
+	if _, err := statemachine.Transition(current.Deposit.LifecycleState, models.StatePartiallyReleased); err != nil {
+		writeError(w, http.StatusConflict, err.Error(), "INVALID_TRANSITION")
+		return
+	}
+
+	reservation := &models.UtilityReservation{
+		ReleasedAmount:     req.ReleasedAmount,
+		ReservedAmount:     req.ReservedAmount,
+		MonthlyAdvance:     req.MonthlyAdvance,
+		BillingPeriodEnd:   req.BillingPeriodEnd,
+		ResolutionDeadline: billingEnd.AddDate(1, 0, 0).Format("2006-01-02"),
+	}
+
+	entry := models.HistoryEntry{State: models.StatePartiallyReleased, Actor: "LANDLORD"}
+	updated, err := s.repo.UpdateState(r.Context(), id, models.StatePartiallyReleased, entry, func(d *models.Deposit) {
+		d.UtilityReservation = reservation
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update deposit", "INTERNAL_ERROR")
+		return
+	}
+
+	s.fireWebhook(updated)
+	writeJSON(w, http.StatusOK, updated)
+}
+
+// POST /deposits/{id}/utility-settle
+// Landlord submits the utility statement outcome once the reconciliation is complete.
+// No shortfall (actual_cost ≤ total_advance_paid) → CLOSED (full reservation returned).
+// Shortfall > 0 → SETTLE_PROPOSED with a pre-populated UTILITY_ARREARS claim so both
+// parties can accept or dispute the figures before CLOSED.
+func (s *Server) UtilitySettle(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	var req models.UtilitySettleRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON", "BAD_REQUEST")
+		return
+	}
+	if req.ActualCost < 0 || req.TotalAdvancePaid < 0 {
+		writeError(w, http.StatusBadRequest, "actual_cost and total_advance_paid must be non-negative", "VALIDATION_ERROR")
+		return
+	}
+
+	current, err := s.repo.GetByID(r.Context(), id)
+	if errors.Is(err, db.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "deposit not found", "NOT_FOUND")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to fetch deposit", "INTERNAL_ERROR")
+		return
+	}
+
+	if current.Deposit.LifecycleState != models.StatePartiallyReleased {
+		writeError(w, http.StatusConflict,
+			fmt.Sprintf("utility-settle requires state PARTIALLY_RELEASED, current state is %s", current.Deposit.LifecycleState),
+			"INVALID_TRANSITION")
+		return
+	}
+	if current.UtilityReservation == nil {
+		writeError(w, http.StatusConflict, "no utility reservation on this deposit", "CONFLICT")
+		return
+	}
+
+	reserved := current.UtilityReservation.ReservedAmount
+	shortfall := req.ActualCost - req.TotalAdvancePaid
+	now := time.Now().UTC()
+
+	if shortfall <= 0 {
+		// Tenant overpaid or broke even — return full reservation.
+		if _, err := statemachine.Transition(models.StatePartiallyReleased, models.StateClosed); err != nil {
+			writeError(w, http.StatusConflict, err.Error(), "INVALID_TRANSITION")
+			return
+		}
+		entry := models.HistoryEntry{State: models.StateClosed, Actor: "LANDLORD", Comment: "utility reconciliation — no shortfall"}
+		updated, err := s.repo.UpdateState(r.Context(), id, models.StateClosed, entry, func(d *models.Deposit) {
+			d.UtilityReservation.SettlementRef = req.SettlementRef
+			d.UtilityReservation.ActualCost = req.ActualCost
+			d.UtilityReservation.TotalAdvancePaid = req.TotalAdvancePaid
+			d.UtilityReservation.ResolvedAt = now.Format("2006-01-02")
+		})
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to update deposit", "INTERNAL_ERROR")
+			return
+		}
+		s.fireWebhook(updated)
+		writeJSON(w, http.StatusOK, updated)
+		return
+	}
+
+	// Shortfall exists — landlord retains up to the reserved amount; propose via settlement flow.
+	retention := shortfall
+	if retention > reserved {
+		retention = reserved
+	}
+	refund := reserved - retention
+
+	if _, err := statemachine.Transition(models.StatePartiallyReleased, models.StateSettleProposed); err != nil {
+		writeError(w, http.StatusConflict, err.Error(), "INVALID_TRANSITION")
+		return
+	}
+
+	settlement := &models.Settlement{
+		InitiatedBy:               "LANDLORD",
+		InitiatedAt:               now,
+		LastProposedBy:            "LANDLORD",
+		LastProposedAt:            now,
+		ClaimItems: []models.ClaimItem{{
+			ID:            "item-1",
+			Category:      models.ClaimCategoryUtilityArrears,
+			Description:   fmt.Sprintf("Utility shortfall: actual cost %.2f, advances paid %.2f", req.ActualCost, req.TotalAdvancePaid),
+			AmountClaimed: shortfall,
+			EvidenceRefs:  []string{req.SettlementRef},
+		}},
+		TotalClaimed:              shortfall,
+		ProposedTenantRefund:      refund,
+		ProposedLandlordRetention: retention,
+		ResponseDeadline:          now.AddDate(0, 0, 14).Format("2006-01-02"),
+	}
+	if req.SettlementRef == "" {
+		settlement.ClaimItems[0].EvidenceRefs = nil
+	}
+
+	entry := models.HistoryEntry{State: models.StateSettleProposed, Actor: "LANDLORD", Comment: "utility reconciliation shortfall"}
+	updated, err := s.repo.UpdateState(r.Context(), id, models.StateSettleProposed, entry, func(d *models.Deposit) {
+		d.UtilityReservation.SettlementRef = req.SettlementRef
+		d.UtilityReservation.ActualCost = req.ActualCost
+		d.UtilityReservation.TotalAdvancePaid = req.TotalAdvancePaid
+		d.UtilityReservation.ResolvedAt = now.Format("2006-01-02")
+		d.Settlement = settlement
 	})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to update deposit", "INTERNAL_ERROR")

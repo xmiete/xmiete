@@ -72,7 +72,7 @@
         },
         "lifecycle_state": {
           "type": "string",
-          "enum": ["REQUESTED", "IDENTIFIED", "FUNDED", "PLEDGED", "RELEASED", "CLAIMED", "SETTLE_PROPOSED", "DISPUTED", "CLOSED"]
+          "enum": ["REQUESTED", "IDENTIFIED", "FUNDED", "PLEDGED", "RELEASED", "CLAIMED", "PARTIALLY_RELEASED", "SETTLE_PROPOSED", "DISPUTED", "CLOSED"]
         },
         "history": {
           "type": "array",
@@ -82,7 +82,7 @@
             "properties": {
               "state": {
                 "type": "string",
-                "enum": ["REQUESTED", "IDENTIFIED", "FUNDED", "PLEDGED", "RELEASED", "CLAIMED", "SETTLE_PROPOSED", "DISPUTED", "CLOSED"]
+                "enum": ["REQUESTED", "IDENTIFIED", "FUNDED", "PLEDGED", "RELEASED", "CLAIMED", "PARTIALLY_RELEASED", "SETTLE_PROPOSED", "DISPUTED", "CLOSED"]
               },
               "timestamp": { "type": "string", "format": "date-time" },
               "actor": { "type": "string", "description": "Entity that triggered the transition (e.g., TENANT, BANK, LANDLORD)" },
@@ -241,6 +241,57 @@
       },
       "then": {
         "required": ["ebics_metadata"]
+      }
+    },
+    "utility_reservation": {
+      "type": "object",
+      "description": "Records the portion of the deposit held back while the annual utility reconciliation is pending. The landlord releases most of the deposit at tenancy end and retains only this reservation. Once the utility statement arrives (billing_period_end + 12 months at the latest, per BGB § 556 Abs. 3), the reservation resolves: no shortfall closes the deposit; a shortfall enters the settlement flow as a UTILITY_ARREARS claim.",
+      "required": ["released_amount", "reserved_amount", "billing_period_end", "resolution_deadline"],
+      "properties": {
+        "released_amount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Amount immediately returned to the tenant at tenancy end."
+        },
+        "reserved_amount": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Amount held back pending utility reconciliation. Typically 3–6 months of the monthly advance payment."
+        },
+        "monthly_advance": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Monthly utility advance payment — informational basis for the reservation size."
+        },
+        "billing_period_end": {
+          "type": "string",
+          "format": "date",
+          "description": "End of the utility billing period the reservation covers."
+        },
+        "resolution_deadline": {
+          "type": "string",
+          "format": "date",
+          "description": "Latest date for the utility statement (billing_period_end + 12 months). After this date the reservation must be released regardless."
+        },
+        "settlement_ref": {
+          "type": "string",
+          "description": "Reference to the utility statement document (document ID or URL)."
+        },
+        "actual_cost": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total utility cost for the billing period, as stated in the utility statement."
+        },
+        "total_advance_paid": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total advance payments made by the tenant during the billing period."
+        },
+        "resolved_at": {
+          "type": "string",
+          "format": "date",
+          "description": "Date the utility statement was submitted and the reservation resolved."
+        }
       }
     },
     "settlement": {

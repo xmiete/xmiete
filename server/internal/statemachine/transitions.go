@@ -24,15 +24,16 @@ import (
 // validTransitions maps each state to the states it may transition to.
 // Rules are derived from LIFECYCLE.md.
 var validTransitions = map[models.LifecycleState][]models.LifecycleState{
-	models.StateRequested:      {models.StateIdentified},
-	models.StateIdentified:     {models.StateFunded, models.StatePledged},
-	models.StateFunded:         {models.StatePledged, models.StateSettleProposed},
-	models.StatePledged:        {models.StateReleased, models.StateClaimed, models.StateSettleProposed},
-	models.StateClaimed:        {models.StateReleased},
-	models.StateReleased:       {models.StateClosed},
-	models.StateSettleProposed: {models.StateClosed, models.StateDisputed},
-	models.StateDisputed:       {models.StateClosed},
-	models.StateClosed:         {},
+	models.StateRequested:         {models.StateIdentified},
+	models.StateIdentified:        {models.StateFunded, models.StatePledged},
+	models.StateFunded:            {models.StatePledged, models.StateSettleProposed},
+	models.StatePledged:           {models.StateReleased, models.StateClaimed, models.StateSettleProposed, models.StatePartiallyReleased},
+	models.StateClaimed:           {models.StateReleased},
+	models.StateReleased:          {models.StateClosed},
+	models.StatePartiallyReleased: {models.StateSettleProposed, models.StateClosed},
+	models.StateSettleProposed:    {models.StateClosed, models.StateDisputed},
+	models.StateDisputed:          {models.StateClosed},
+	models.StateClosed:            {},
 }
 
 // ErrInvalidTransition is returned when a requested state change is not allowed.

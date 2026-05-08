@@ -26,10 +26,27 @@ const (
 	StatePledged        LifecycleState = "PLEDGED"
 	StateReleased       LifecycleState = "RELEASED"
 	StateClaimed        LifecycleState = "CLAIMED"
-	StateSettleProposed LifecycleState = "SETTLE_PROPOSED"
-	StateDisputed       LifecycleState = "DISPUTED"
-	StateClosed         LifecycleState = "CLOSED"
+	StateSettleProposed    LifecycleState = "SETTLE_PROPOSED"
+	StateDisputed          LifecycleState = "DISPUTED"
+	StatePartiallyReleased LifecycleState = "PARTIALLY_RELEASED"
+	StateClosed            LifecycleState = "CLOSED"
 )
+
+// UtilityReservation records the portion of a deposit held back at tenancy end
+// while the annual utility reconciliation is pending (billing period end + 12 months).
+// The landlord releases most of the deposit immediately and retains only the reservation.
+// Once the utility statement arrives, the reservation resolves via the settlement flow.
+type UtilityReservation struct {
+	ReleasedAmount     float64 `json:"released_amount"`
+	ReservedAmount     float64 `json:"reserved_amount"`
+	MonthlyAdvance     float64 `json:"monthly_advance,omitempty"`
+	BillingPeriodEnd   string  `json:"billing_period_end"`
+	ResolutionDeadline string  `json:"resolution_deadline"`
+	SettlementRef      string  `json:"settlement_ref,omitempty"`
+	ActualCost         float64 `json:"actual_cost,omitempty"`
+	TotalAdvancePaid   float64 `json:"total_advance_paid,omitempty"`
+	ResolvedAt         string  `json:"resolved_at,omitempty"`
+}
 
 type ClaimCategory string
 
@@ -284,7 +301,8 @@ type Deposit struct {
 	Trusteeship *Trusteeship `json:"trusteeship,omitempty"`
 	Provider    *Provider    `json:"provider,omitempty"`
 	Transport   *Transport   `json:"transport,omitempty"`
-	Settlement  *Settlement  `json:"settlement,omitempty"`
+	Settlement         *Settlement         `json:"settlement,omitempty"`
+	UtilityReservation *UtilityReservation `json:"utility_reservation,omitempty"`
 }
 
 // Request/response payloads for action endpoints.
@@ -352,6 +370,26 @@ type DisputeResolveRequest struct {
 	AgreedTenantRefund      float64 `json:"agreed_tenant_refund"`
 	AgreedLandlordRetention float64 `json:"agreed_landlord_retention"`
 	ResolutionReference     string  `json:"resolution_reference,omitempty"`
+}
+
+// PartialReleaseRequest is sent by the landlord to release most of the deposit
+// while holding back a reservation for the pending utility reconciliation.
+// released_amount + reserved_amount must equal the deposit amount.
+type PartialReleaseRequest struct {
+	ReleasedAmount   float64 `json:"released_amount"`
+	ReservedAmount   float64 `json:"reserved_amount"`
+	MonthlyAdvance   float64 `json:"monthly_advance,omitempty"`
+	BillingPeriodEnd string  `json:"billing_period_end"` // ISO 8601 date
+}
+
+// UtilitySettleRequest is sent once the utility statement arrives.
+// actual_cost vs total_advance_paid determines the shortfall (if any).
+// No shortfall → CLOSED (full reservation returned).
+// Shortfall ≤ reserved_amount → SETTLE_PROPOSED with a UTILITY_ARREARS claim.
+type UtilitySettleRequest struct {
+	SettlementRef    string  `json:"settlement_ref,omitempty"`
+	ActualCost       float64 `json:"actual_cost"`
+	TotalAdvancePaid float64 `json:"total_advance_paid"`
 }
 
 type ErrorResponse struct {

@@ -64,6 +64,10 @@ func NewRouter(s *Server, jwtSecret string) http.Handler {
 			// PDF release confirmation — sent on RELEASED, also available on demand
 			r.Get("/deposits/{id}/release-receipt", s.GetReleaseReceipt)
 
+			// Partial release with utility reservation (billing period pending)
+			r.Post("/deposits/{id}/partial-release", s.PartialRelease)
+			r.Post("/deposits/{id}/utility-settle", s.UtilitySettle)
+
 			// Structured settlement flow (inspired by UK TDS/DPS, AU RTBA, CH Mietkaution)
 			r.Post("/deposits/{id}/settle", s.Settle)
 			r.Post("/deposits/{id}/settle/accept", s.SettleAccept)

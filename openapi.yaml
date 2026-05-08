@@ -135,6 +135,93 @@ paths:
         '200':
           description: Claimed
 
+  # ── Utility Reservation Flow ──────────────────────────────────────────────────
+
+  /deposits/{id}/partial-release:
+    post:
+      summary: Release most of the deposit, hold back a utility reservation
+      description: |
+        Landlord releases the majority of the deposit immediately at tenancy end
+        and retains a reservation while the utility reconciliation is pending.
+        The resolution deadline is automatically set to billing_period_end + 12 months
+        (the statutory limit for sending the utility statement, BGB § 556 Abs. 3).
+        State: PLEDGED → PARTIALLY_RELEASED.
+        The reservation is typically sized at 3–6 months of the monthly advance payment.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [released_amount, reserved_amount, billing_period_end]
+              properties:
+                released_amount:
+                  type: number
+                  minimum: 0
+                  description: Amount returned to the tenant immediately.
+                reserved_amount:
+                  type: number
+                  exclusiveMinimum: 0
+                  description: Amount held back pending utility reconciliation.
+                monthly_advance:
+                  type: number
+                  minimum: 0
+                  description: Monthly utility advance — informational basis for reservation size.
+                billing_period_end:
+                  type: string
+                  format: date
+                  description: End of the utility billing period (YYYY-MM-DD).
+      responses:
+        '200':
+          description: Deposit partially released; utility_reservation recorded
+
+  /deposits/{id}/utility-settle:
+    post:
+      summary: Submit utility statement outcome and resolve the reservation
+      description: |
+        Landlord submits actual utility cost once the statement arrives.
+        The shortfall (actual_cost − total_advance_paid) determines the outcome:
+        - No shortfall (actual_cost ≤ total_advance_paid): deposit moves to CLOSED;
+          the full reservation is returned to the tenant.
+        - Shortfall > 0: a UTILITY_ARREARS claim is created for the shortfall amount
+          and the deposit moves to SETTLE_PROPOSED so both parties can accept or dispute.
+          From SETTLE_PROPOSED the existing settle/accept and dispute endpoints apply.
+        State: PARTIALLY_RELEASED → CLOSED or SETTLE_PROPOSED.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [actual_cost, total_advance_paid]
+              properties:
+                settlement_ref:
+                  type: string
+                  description: Reference to the utility statement document.
+                actual_cost:
+                  type: number
+                  minimum: 0
+                  description: Total utility cost for the billing period per the statement.
+                total_advance_paid:
+                  type: number
+                  minimum: 0
+                  description: Total advance payments made by the tenant during the billing period.
+      responses:
+        '200':
+          description: Reservation resolved — deposit is CLOSED (no shortfall) or SETTLE_PROPOSED (shortfall)
+
   # ── Settlement Flow ───────────────────────────────────────────────────────────
 
   /deposits/{id}/settle:
