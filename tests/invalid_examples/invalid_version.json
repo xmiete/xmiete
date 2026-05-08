@@ -1,0 +1,63 @@
+{
+  "meta": {
+    "version": "0.9.0",
+    "timestamp": "2026-05-07T12:00:00Z",
+    "external_id": "INS-776655"
+  },
+  "tenant": {
+    "first_name": "Julia",
+    "last_name": "Schmidt",
+    "email": "julia@schmidt.de",
+    "tax_id": "11223344556",
+    "eid_status": "VERIFIED",
+    "address": {
+      "street": "Allee 10",
+      "zip": "20095",
+      "city": "Hamburg",
+      "country": "DE"
+    }
+  },
+  "landlord": {
+    "name": "Eigent\u00fcmergemeinschaft Elbe",
+    "type": "PRIVATE"
+  },
+  "property": {
+    "address": {
+      "street": "Hafenstr. 1",
+      "zip": "20457",
+      "city": "Hamburg",
+      "country": "DE"
+    }
+  },
+  "deposit": {
+    "amount": 2100.0,
+    "currency": "EUR",
+    "type": "INSURANCE",
+    "lifecycle_state": "PLEDGED",
+    "history": [
+      {
+        "state": "REQUESTED",
+        "timestamp": "2026-05-07T09:00:00Z",
+        "actor": "TENANT"
+      },
+      {
+        "state": "IDENTIFIED",
+        "timestamp": "2026-05-07T09:45:00Z",
+        "actor": "TENANT",
+        "comment": "eID verified"
+      },
+      {
+        "state": "PLEDGED",
+        "timestamp": "2026-05-07T12:00:00Z",
+        "actor": "INSURER",
+        "comment": "Policy issued"
+      }
+    ]
+  },
+  "provider": {
+    "provider_type": "INSURANCE_BROKER",
+    "executing_entity": "Insurance Co",
+    "brand_name": "Kautionsfrei",
+    "insurance_policy_number": "KF-998877"
+  }
+}
