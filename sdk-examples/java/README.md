@@ -14,10 +14,41 @@ A robust, type-safe Java client example for the XMiete standard. Java is the pri
 - **Asynchronous** — Designed for high-performance enterprise applications.
 - **eIDAS 2.0 ready** — `WalletMetadata` model covers PID, EAA, QEAA, and MDL credential types.
 - **BGB § 551 compliant** — Built-in support for legal pledge confirmation flows.
+- **Provider agnostic** — eID verification is abstracted behind `IdentityVerifier`; swap providers without touching any other SDK code.
+
+## Provider Agnosticism
+
+The `eid` package exposes an `IdentityVerifier` interface rather than a concrete type. The built-in `EidVerificationService` provides a generic HTTP adapter, but any bank can supply its own:
+
+```java
+public class MyProviderAdapter implements IdentityVerifier {
+
+    @Override
+    public CompletableFuture<EidVerificationSession> initiateVerification(EidVerificationRequest req) {
+        // call your internal eID provider SDK or REST API
+    }
+
+    @Override
+    public CompletableFuture<Void> updateDepositKycStatus(String depositId, KycUpdatePayload payload, String bearerToken) {
+        // push result to XMiete API
+    }
+}
+
+// Wire it up — no other SDK code changes required.
+var handler = new EidWebhookHandler(new MyProviderAdapter(), bearerToken, onComplete);
+```
+
+Tested providers: Generic BSI TR-03130 HTTP (built-in), AusweisApp2 SDK, Authada, SkIDentity, Bundesdruckerei / D-Trust.
 
 ## Roadmap
 
 - **QEAA Issuance Flow client** — Implement the bank-side OID4VCI Pre-Authorized Code Flow in Java: issuance session handling, SD-JWT `KautionsPfandNachweis` credential construction (using `nimbus-jose-jwt`), token endpoint client, and credential status polling. Priority language given Java's dominance in German banking infrastructure.
+
+## How to Run
+
+```bash
+mvn test
+```
 
 ## Integration
 

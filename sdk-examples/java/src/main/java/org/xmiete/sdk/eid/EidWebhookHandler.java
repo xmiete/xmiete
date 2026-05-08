@@ -45,12 +45,12 @@ public class EidWebhookHandler {
 
     private static final Logger log = Logger.getLogger(EidWebhookHandler.class.getName());
 
-    private final EidVerificationService verificationService;
+    private final IdentityVerifier verificationService;
     private final String xmieteBearerToken;
     private final Consumer<EidWebhookEvent> onVerificationComplete;
 
     public EidWebhookHandler(
-        EidVerificationService verificationService,
+        IdentityVerifier verificationService,
         String xmieteBearerToken,
         Consumer<EidWebhookEvent> onVerificationComplete
     ) {

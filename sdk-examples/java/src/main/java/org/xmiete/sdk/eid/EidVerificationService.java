@@ -30,7 +30,7 @@ import java.util.concurrent.CompletableFuture;
  *   3. The eID provider calls your webhook → handled by EidWebhookHandler
  *   4. EidWebhookHandler calls updateDepositKycStatus() to finalize the XMiete deposit state
  */
-public class EidVerificationService {
+public class EidVerificationService implements IdentityVerifier {
 
     private final HttpClient httpClient;
     private final String eidProviderBaseUrl;
@@ -46,6 +46,7 @@ public class EidVerificationService {
      * Creates an eID verification session. Redirect the tenant to
      * {@link EidVerificationSession#authorizationUrl()} within the session's validity window.
      */
+    @Override
     public CompletableFuture<EidVerificationSession> initiateVerification(EidVerificationRequest request) {
         String body = """
             {
@@ -87,6 +88,7 @@ public class EidVerificationService {
      * Pushes the verified eID result to the XMiete API (POST /deposits/{id}/kyc).
      * Only the {@code providerReference} is stored — never raw PII from the eID chip.
      */
+    @Override
     public CompletableFuture<Void> updateDepositKycStatus(
         String depositId,
         KycUpdatePayload payload,
