@@ -82,7 +82,7 @@ See [`examples/qeaa_deposit_pledge_attestation.json`](examples/qeaa_deposit_pled
 
 ## Getting Started
 
-The core of this project is [`xmiete_schema.json`](xmiete_schema.json). The reference server lives in [`server/`](server/). SDK examples for Go, Rust, and Java are in [`sdk-examples/`](sdk-examples/).
+The core of this project is [`xmiete_schema.json`](xmiete_schema.json). The reference server lives in [`server/`](server/). SDK examples for Go, Rust, Java, and TypeScript/Node.js are in [`sdk-examples/`](sdk-examples/).
 
 ### Environment Variables (reference server)
 
@@ -97,15 +97,14 @@ The core of this project is [`xmiete_schema.json`](xmiete_schema.json). The refe
 
 | Priority | Item |
 |---|---|
-| High | **QEAA Issuance Flow — SDK implementations**: Port the server-side issuance flow (OpenID4VCI Pre-Authorized Code Flow, SD-JWT credential building, session management) to client SDK libraries in Go, Rust, Java, Python, and TypeScript. |
-| High | **Python SDK** — Schema models + eID + issuance flow client |
-| High | **TypeScript/Node.js SDK** — Schema models + eID + issuance flow client |
+| High | **QEAA Issuance Flow — SDK implementations**: Port the server-side issuance flow (OpenID4VCI Pre-Authorized Code Flow, SD-JWT credential building, session management) to client SDK libraries in Go, Rust, and Java. TypeScript foundation is in place. |
 | Medium | **Persistent session store** — Replace in-memory issuance session store with Redis/DB-backed implementation for production deployments |
 | Medium | **Credential status list (CSL)** — Batch revocation via W3C Bitstring Status List instead of per-credential polling |
 | Medium | **Key management** — HSM / KMS integration for credential signing key (replace ephemeral ECDSA key) |
 | Medium | **Wallet-initiated issuance** — Authorization Code Flow variant for cases where the tenant's wallet initiates the issuance |
 | Low | **Batch credential issuance** — OID4VCI batch endpoint for multi-tenant scenarios |
 | Low | **eIDAS Trust List integration** — Automated lookup of bank issuer trust anchors via EU Trust List |
+| Low | **Python SDK** — Schema models + eID + issuance flow client |
 
 ## License
 
