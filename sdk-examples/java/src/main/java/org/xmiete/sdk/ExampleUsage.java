@@ -16,52 +16,54 @@ import org.xmiete.sdk.eid.EidModels.*;
 import org.xmiete.sdk.eid.EidVerificationService;
 import org.xmiete.sdk.eid.EidWebhookHandler;
 import org.xmiete.sdk.models.Deposit;
+import org.xmiete.sdk.openid4vp.OpenId4VpModels.*;
+import org.xmiete.sdk.openid4vp.OpenId4VpService;
 
 import java.time.OffsetDateTime;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Demonstrates the full XMiete flow including OIDC token validation and eID verification.
+ * Demonstrates the full XMiete flow including OIDC token validation, eID verification,
+ * webhook handling, and OpenID4VP wallet credential presentation.
  *
- * Scenario: a PropTech platform (Fintech role) onboards a new tenant.
- *   1. Validate the API caller's OAuth2 token and scopes
- *   2. Initiate an eID verification session for the tenant
- *   3. Process the eID provider's webhook callback
- *   4. KYC status is updated → deposit transitions to IDENTIFIED
+ * Scenario: a PropTech platform onboards a tenant and lets a landlord verify the pledge
+ * via an eIDAS 2.0 EUDI Wallet.
  */
 public class ExampleUsage {
 
     public static void main(String[] args) {
 
-        // --- 1. OIDC Token Validation ----------------------------------------
-
+        // ── 1. OIDC Token Validation ──────────────────────────────────────────
+        // docs:start:auth-java
         var validator = new OidcTokenValidator(
             "https://auth.xmiete.example/.well-known/openid-configuration"
         );
 
-        // Simulate a Bearer token arriving in an HTTP Authorization header.
-        // In production this comes from the incoming HTTP request.
-        String incomingAuthHeader = "Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6ImtleS0xIn0"
-            + ".eyJzdWIiOiJmaW50ZWNoLWFwcC0xIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLnhtaWV0ZS5leGFtcGxlIiwic2NvcGUiOiJkZXBvc2l0OnJlYWQgZGVwb3NpdDpjcmVhdGUiLCJleHAiOjk5OTk5OTk5OTl9"
-            + ".signature-stub";
+        // In production, pass request.getHeader("Authorization").
+        String incomingAuthHeader = "Bearer <token>";
 
         try {
-            TokenClaims claims = validator.validateToken(incomingAuthHeader, "deposit:read", "deposit:create");
-            System.out.println("Token valid — subject: " + claims.subject()
+            TokenClaims claims = validator.validateToken(
+                incomingAuthHeader, "deposit:read", "deposit:create"
+            );
+            System.out.println("Token valid — sub: " + claims.subject()
                 + ", scopes: " + claims.scopes());
         } catch (OidcTokenValidator.TokenValidationException e) {
+            // HTTP 401 — malformed JWT, expired, or wrong issuer
             System.err.println("Token rejected: " + e.getMessage());
             return;
         } catch (OidcTokenValidator.InsufficientScopeException e) {
+            // HTTP 403 — valid token, scope not granted
             System.err.println("Access denied: " + e.getMessage());
             return;
         }
+        // docs:end:auth-java
 
-        // --- 2. eID Verification Session -------------------------------------
-
+        // ── 2. eID Verification Session ───────────────────────────────────────
+        // docs:start:eid-java
         var eidService = new EidVerificationService(
-            "https://eid-provider.example",   // e.g., Authada or SkIDentity
-            "https://api.xmiete.example/v1"
+            "https://eid-provider.example",  // e.g., Authada, SkIDentity
+            "https://api.xmiete.org/v1"
         );
 
         var verificationRequest = new EidVerificationRequest(
@@ -71,76 +73,60 @@ public class ExampleUsage {
             "xmiete-fintech-client"
         );
 
-        System.out.println("Initiating eID verification for deposit DEP-123...");
         EidVerificationSession session = eidService
             .initiateVerification(verificationRequest)
-            .exceptionally(ex -> {
-                // Demo fallback — eID provider not reachable in this example
-                System.out.println("(Demo) eID provider unavailable, using stub session");
-                return new EidVerificationSession(
-                    "SESSION-STUB-456",
-                    "https://eid-provider.example/authorize?session_id=SESSION-STUB-456",
-                    OffsetDateTime.now().plusMinutes(15)
-                );
-            })
+            .exceptionally(ex -> new EidVerificationSession(
+                "SESSION-STUB-456",
+                "https://eid-provider.example/authorize?session_id=SESSION-STUB-456",
+                OffsetDateTime.now().plusMinutes(15)
+            ))
             .join();
 
-        System.out.println("eID session created: " + session.sessionId());
         System.out.println("Redirect tenant to: " + session.authorizationUrl());
-        System.out.println("Session valid until: " + session.expiresAt());
+        // The eID provider will POST the result to your /webhook/eid endpoint.
+        // docs:end:eid-java
 
-        // --- 3. Webhook from eID Provider ------------------------------------
-
-        // In production this arrives as an HTTP POST to your webhook endpoint.
-        // Here we simulate the provider calling back after the tenant verified their eID.
-        String simulatedWebhookBody = """
-            {
-              "session_id": "SESSION-STUB-456",
-              "deposit_id": "DEP-123",
-              "status": "VERIFIED",
-              "provider_reference": "EID-AUTHADA-789XYZ",
-              "error_code": null
-            }
-            """;
-
-        // Shared secret registered with the eID provider (store in env/secrets manager)
+        // ── 3. Webhook from eID Provider ──────────────────────────────────────
+        // docs:start:webhook-java
         String webhookSecret = System.getenv().getOrDefault("EID_WEBHOOK_SECRET", "dev-secret-only");
-        String simulatedSignature = computeHmacStub(simulatedWebhookBody, webhookSecret);
 
         var webhookHandler = new EidWebhookHandler(
             eidService,
-            "Bearer <xmiete-service-token>",  // service account token with deposit:create scope
-            event -> System.out.println("Verification complete — status: " + event.status()
+            "Bearer <xmiete-service-token>",
+            event -> System.out.println("eID done — status: " + event.status()
                 + ", providerRef: " + event.providerReference())
         );
 
-        System.out.println("Processing eID webhook...");
-        try {
-            webhookHandler.handleWebhook(simulatedWebhookBody, simulatedSignature, webhookSecret);
-        } catch (EidWebhookHandler.InvalidWebhookSignatureException e) {
-            System.err.println("Webhook rejected — invalid signature: " + e.getMessage());
-        }
+        // In your servlet / Spring @PostMapping:
+        //   byte[] body = request.getInputStream().readAllBytes();
+        //   String sig  = request.getHeader("X-Signature");
+        //   webhookHandler.handleWebhook(body, sig, webhookSecret);
+        // docs:end:webhook-java
 
-        // --- 4. Fetch Updated Deposit ----------------------------------------
+        // ── 4. OpenID4VP — Wallet Credential Presentation ────────────────────
+        // docs:start:openid4vp-java
+        var vpVerifier = new OpenId4VpService(
+            "https://verifier.yourapp.example.com",
+            "https://auth.example.com/.well-known/jwks.json"
+        );
 
-        XMieteClient client = new MockXMieteClient();
-        client.getDeposit("DEP-123")
-            .thenAccept(deposit -> {
-                if (deposit != null) {
-                    System.out.println("Deposit state: " + deposit.depositDetails().lifecycleState());
-                    System.out.println("eID status: " + deposit.tenant().eidStatus());
-                }
-            })
-            .join();
+        // Step 1 — build a VP request and deliver it to the wallet (QR or deep-link).
+        String responseUri = "https://yourapp.example.com/vp-response";
+        VpRequestResult req = vpVerifier.buildVpRequest("DEP-123", responseUri).join();
+        String nonce = req.nonce();
+        // Persist nonce; serialize req.vpRequest() as JSON and embed in QR code.
+
+        // Step 3 — wallet POSTs vp_token to responseUri; verify it here.
+        VerifiedClaims vp = vpVerifier.verifyVpToken("<vp_token>", nonce, responseUri).join();
+        System.out.println("Deposit: " + vp.depositId());
+        System.out.println("Pledge date: " + vp.pledgeDate());
+        System.out.println("Issuing bank: " + vp.issuingBank());
+        // docs:end:openid4vp-java
 
         System.out.println("Flow complete.");
     }
 
-    /** Stub: real implementation uses javax.crypto.Mac as in EidWebhookHandler. */
-    private static String computeHmacStub(String body, String secret) {
-        return "stub-hmac-for-demo";
-    }
-
+    // ── Mock Client ───────────────────────────────────────────────────────────
 
     static class MockXMieteClient implements XMieteClient {
 
@@ -165,7 +151,8 @@ public class ExampleUsage {
         }
 
         @Override
-        public CompletableFuture<Void> updateKycStatus(String depositId, org.xmiete.sdk.eid.EidModels.KycUpdatePayload payload) {
+        public CompletableFuture<Void> updateKycStatus(String depositId,
+                org.xmiete.sdk.eid.EidModels.KycUpdatePayload payload) {
             System.out.println("(Mock) KYC updated for " + depositId + " → " + payload.eidStatus());
             return CompletableFuture.completedFuture(null);
         }
