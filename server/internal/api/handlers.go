@@ -75,7 +75,7 @@ func (s *Server) CreateDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if d.Meta.Version == "" {
-		d.Meta.Version = "1.0.0"
+		d.Meta.Version = "2.0.0"
 	}
 	if d.Deposit.Currency == "" {
 		d.Deposit.Currency = "EUR"
