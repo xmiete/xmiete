@@ -1,7 +1,8 @@
 {
   "meta": {
-    "version": "1.0.0",
+    "version": "2.0.0",
     "timestamp": "2026-05-07T12:00:00Z",
+    "jurisdiction": "DE",
     "external_id": "INS-776655"
   },
   "tenant": {
@@ -9,6 +10,7 @@
     "last_name": "Schmidt",
     "email": "julia@schmidt.de",
     "tax_id": "11223344556",
+    "tax_id_type": "STEUER_ID",
     "eid_status": "VERIFIED",
     "address": {
       "street": "Allee 10",

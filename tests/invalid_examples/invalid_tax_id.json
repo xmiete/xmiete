@@ -1,10 +1,11 @@
 {
-  "meta": { "version": "1.0.0", "timestamp": "2026-05-07T10:00:00Z" },
+  "meta": { "version": "2.0.0", "timestamp": "2026-05-07T10:00:00Z", "jurisdiction": "DE" },
   "tenant": {
     "first_name": "Invalid",
     "last_name": "TaxID",
     "email": "test@example.com",
     "tax_id": "123",
+    "tax_id_type": "NOT_A_VALID_TYPE",
     "eid_status": "VERIFIED",
     "address": { "street": "S", "zip": "1", "city": "C", "country": "DE" }
   },

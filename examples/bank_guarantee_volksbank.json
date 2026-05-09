@@ -1,7 +1,8 @@
 {
   "meta": {
-    "version": "1.0.0",
+    "version": "2.0.0",
     "timestamp": "2026-05-07T11:00:00Z",
+    "jurisdiction": "DE",
     "external_id": "PF-VB-456"
   },
   "tenant": {
@@ -9,6 +10,7 @@
     "last_name": "Mustermann",
     "email": "max@mustermann.de",
     "tax_id": "98765432109",
+    "tax_id_type": "STEUER_ID",
     "eid_status": "NOT_STARTED",
     "address": {
       "street": "Bahnhofstr. 5",

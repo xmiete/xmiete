@@ -1,7 +1,8 @@
 {
   "meta": {
-    "version": "1.0.0",
+    "version": "2.0.0",
     "timestamp": "2026-05-07T10:00:00Z",
+    "jurisdiction": "DE",
     "external_id": "AAREAL-MOMO-123"
   },
   "tenant": {
@@ -9,6 +10,7 @@
     "last_name": "Mustermann",
     "email": "erika@example.de",
     "tax_id": "12345678901",
+    "tax_id_type": "STEUER_ID",
     "eid_status": "VERIFIED",
     "address": {
       "street": "Musterstr. 1",
@@ -64,6 +66,7 @@
     "insolvency_protection_confirmed": true,
     "insolvency_protection_confirmed_date": "2026-05-07",
     "statutory_basis": "BGB § 551 Abs. 3",
+    "interest_required": true,
     "interest_rate": 0.0150,
     "interest_rate_history": [
       { "rate": 0.0100, "effective_from": "2026-05-01", "effective_to": "2026-12-31" },
