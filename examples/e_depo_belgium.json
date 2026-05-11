@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "version": "2.1.0",
+    "timestamp": "2026-05-11T12:00:00Z",
+    "jurisdiction": "BE",
+    "external_id": "RENTUMO-BE-9988"
+  },
+  "tenant": {
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "email": "jean.dupont@example.be",
+    "address": {
+      "street": "Rue de la Loi 16",
+      "zip": "1000",
+      "city": "Bruxelles",
+      "country": "BE"
+    }
+  },
+  "landlord": {
+    "name": "Immo Brussels SA",
+    "type": "COMMERCIAL"
+  },
+  "property": {
+    "address": {
+      "street": "Avenue Louise 200",
+      "zip": "1050",
+      "city": "Ixelles",
+      "country": "BE"
+    }
+  },
+  "lease": {
+    "monthly_cold_rent": 1200.00,
+    "currency": "EUR",
+    "lease_start": "2026-06-01"
+  },
+  "deposit": {
+    "amount": 2400.00,
+    "currency": "EUR",
+    "type": "CASH_EQUIVALENT",
+    "lifecycle_state": "REQUESTED",
+    "protection_deadline": "2026-06-15",
+    "history": [
+      {
+        "state": "REQUESTED",
+        "timestamp": "2026-05-11T10:00:00Z",
+        "actor": "LANDLORD",
+        "comment": "Deposit requested via e-DEPO flow."
+      }
+    ]
+  },
+  "trusteeship": {
+    "account_type": "EDEPO",
+    "trustee_entity": "Federal Public Service Finance (e-DEPO)",
+    "statutory_basis": "Woninghuurwet Art. 10",
+    "interest_required": true,
+    "permitted_payment_flows": ["TENANT_TO_TRUSTEE"]
+  },
+  "protection_scheme": {
+    "scheme_name": "EDEPO_BE",
+    "registration_number": "PENDING",
+    "registration_date": "2026-05-11",
+    "registration_deadline": "2026-06-15",
+    "protection_type": "CUSTODIAL",
+    "statutory_basis": "Woninghuurwet Art. 10"
+  },
+  "provider": {
+    "provider_type": "GOVERNMENT_SCHEME_OPERATOR",
+    "executing_entity": "FPS Finance Belgium",
+    "brand_name": "e-DEPO"
+  }
+}

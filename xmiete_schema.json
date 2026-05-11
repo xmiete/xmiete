@@ -17,7 +17,7 @@
       "type": "object",
       "required": ["version", "timestamp", "jurisdiction"],
       "properties": {
-        "version": { "type": "string", "const": "2.0.0" },
+        "version": { "type": "string", "const": "2.1.0" },
         "timestamp": { "type": "string", "format": "date-time" },
         "jurisdiction": {
           "type": "string",
@@ -198,6 +198,14 @@
           ],
           "description": "TREUHANDKONTO: DE/AT standard segregated landlord-held trust account. ANDERKONTO: DE restricted to licensed professionals (lawyers, notaries). POOLED_TREUHAND: DE multiple deposits in one designated account with per-tenant sub-accounting. MIETKAUTIONSKONTO: CH/NO blocked account in tenant's name — landlord has zero access without tenant consent or court order (Art. 257e CO; Husleieloven §3-5). CUSTODIAL_SCHEME: UK government-approved scheme holds funds directly (TDS, DPS, SafeDeposits Scotland). INSURED_SCHEME: UK landlord holds funds, insured via government-approved scheme (MyDeposits, TDS insured). EDEPO: BE mandatory blocked escrow via Belgian e-DEPO system — cannot be paid to landlord directly. FIANZA_REGIONAL: ES legal fianza (1 month) held by regional authority (INCASOL, IVIMA, etc.). STATE_GUARANTEE: LU state-backed guarantee for low-income tenants. DEPOSIT_INSURANCE: CH/DE alternative to cash deposit — annual premium product (SwissCaution, goCaution, getmomo). LANDLORD_HELD: FR/NL/IT/most CEE — landlord holds funds without statutory escrow requirement."
         },
+        "permitted_payment_flows": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["TENANT_TO_LANDLORD", "TENANT_TO_TRUSTEE", "LANDLORD_TO_TRUSTEE"]
+          },
+          "description": "Explicitly permitted payment routes for initial funding. Belgium (e-DEPO) allows only ['TENANT_TO_TRUSTEE']; Germany and UK-Insured allow ['TENANT_TO_LANDLORD', 'LANDLORD_TO_TRUSTEE']."
+        },
         "trustee_entity": {
           "type": "string",
           "description": "Full legal name of the entity holding or guaranteeing the funds."
@@ -317,7 +325,7 @@
       "properties": {
         "provider_type": {
           "type": "string",
-          "enum": ["BANK_SYSTEM_PARTNER", "INSURANCE_BROKER", "DIRECT_BANK", "FINTECH_PLATFORM"]
+          "enum": ["BANK_SYSTEM_PARTNER", "INSURANCE_BROKER", "DIRECT_BANK", "FINTECH_PLATFORM", "GOVERNMENT_SCHEME_OPERATOR"]
         },
         "executing_entity": {
           "type": "string",
