@@ -1,16 +1,16 @@
 # XMiete Technical Manifest
-**Version 0.1 — May 2026**
+**Version 0.2 — May 2026**
 **AG XMiete · xmiete.org**
 
 ---
 
 ## 1. Preamble: Why a Standard, Not a Product
 
-The rental deposit market in Germany processes approximately 530,000 new deposits every month — roughly €3 billion in annual capital flows passing through a workflow that is still predominantly paper-based. The failure is not technological. The technology to digitise this process has existed for years. The failure is structural: no single actor in the market has the mandate, the neutrality, or the incentive to define the shared protocol that all others would need to adopt.
+Across the European Union, roughly 1.5 million new rental deposits are created every month — an estimated €180 billion in tenant capital locked in workflows that are still predominantly paper-based. The failure is not technological. The technology to digitise this process has existed for years. The failure is structural: no single actor in the market has the mandate, the neutrality, or the incentive to define the shared protocol that all others would need to adopt.
 
 This is exactly the class of problem that standards solve.
 
-XMiete is not a product. It is not a platform. It is not a marketplace. It is an open, vendor-neutral, governance-backed specification — a digital infrastructure layer for rental deposit management, built on the German legal framework and designed to scale via eIDAS 2.0 to a pan-European banking standard.
+XMiete is not a product. It is not a platform. It is not a marketplace. It is an open, vendor-neutral, governance-backed specification — a digital infrastructure layer for rental deposit management, designed from the ground up as a pan-European standard and grounded in eIDAS 2.0 as the shared legal framework.
 
 The initiative draws directly from the governance tradition of comparable German digital infrastructure standards:
 
@@ -19,7 +19,7 @@ The initiative draws directly from the governance tradition of comparable German
 | **DENIC** | Domain names (.de) | Registered cooperative, multi-stakeholder | Telekommunikationsgesetz, ICANN delegation |
 | **xRechnung** | Electronic invoices (B2G) | KoSIT working group, federal mandate | EU Directive 2014/55/EU, E-Rechnungsverordnung |
 | **xBau** | Building permit data exchange | KoSIT / IT-Planungsrat working group | Onlinezugangsgesetz (OZG), Baurecht |
-| **XMiete** | Rental deposit lifecycle | AG XMiete, open working group | BGB § 551, eIDAS Regulation 910/2014 (amended) |
+| **XMiete** | Rental deposit lifecycle | AG XMiete, open working group | eIDAS 2.0 Regulation (EU) 2024/1183 · national tenancy statutes via `meta.jurisdiction` |
 
 Each of these exists because a market or public administration process had a coordination problem that no commercial actor could or should solve unilaterally. XMiete is initiated from the same conviction.
 
@@ -63,10 +63,10 @@ XMiete is a layered architecture. Each layer has a defined scope and may be repl
 The XMiete Core Schema (`xmiete_schema.json`, JSON Schema Draft 07) defines the canonical data structure for a rental deposit object. It is the normative centre of the standard — the equivalent of xRechnung's UBL/CII XML binding or xBau's XSD.
 
 Key design properties:
-- **Legally grounded field semantics.** Every required field maps to a legal obligation under BGB § 551 and §§ 1204 ff. (Pfandrecht). Optional fields carry semantic annotations aligned to provider types and national variations.
+- **Jurisdiction-aware field semantics.** The `meta.jurisdiction` field selects the applicable national legal framework; field constraints adapt accordingly — BGB § 551 (DE), Art. 257e CO (CH), Housing Act 2004 (UK), Garantie locative (BE), Husleieloven § 3-5 (NO), and so on. XMiete carries the law of the deposit, not just its data.
 - **Provider-agnostic.** The `provider` object supports all three deposit types (cash equivalent, bank guarantee, insurance) and all four provider archetypes (direct bank, fintech platform, insurance broker, bank system partner) under a single schema.
 - **Lifecycle state machine.** The `deposit.lifecycle_state` field defines a normative seven-state machine (`REQUESTED → IDENTIFIED → FUNDED → PLEDGED → RELEASED → CLAIMED → CLOSED`) with non-repudiable JWS-signed state transitions in the audit history.
-- **Modular identity integration.** The `tenant.eid_status` field and `wallet_metadata` object are designed to receive German eID attestations today and EUDI Wallet QEAA credentials (PID, EAA) as they become available.
+- **Modular identity integration.** The `tenant.eid_status` field and `wallet_metadata` object support any national eID scheme compliant with eIDAS LoA "High" today and EUDI Wallet QEAA credentials (PID, EAA) as they become available under eIDAS 2.0.
 
 ### 4.2 Identity Layer — eID and EUDI Wallet
 
@@ -102,15 +102,27 @@ XMiete is transport-agnostic at the schema level. Two transport profiles are cur
 
 ## 5. Legal Grounding
 
-XMiete does not create new law. It operationalises existing law.
+XMiete does not create new law. It operationalises existing law — at two levels simultaneously.
 
-**BGB § 551** (Begrenzung und Anlage von Mietsicherheiten) establishes the legal framework for rental deposits in Germany: the three-month cap, the insolvency-protected separate account requirement, and the tenant's right to pledge rather than deposit cash. XMiete translates every normative requirement of § 551 into schema constraints.
+**eIDAS Regulation (EU) No 910/2014 as amended by (EU) 2024/1183** is the primary pan-European anchor. It provides the legal basis for EUDI Wallet credentials at LoA "High" across all 27 EU member states. A DepositPledgeAttestation issued by a regulated bank as a QEAA has the same legal standing across the EU as a bank-issued paper document — this is the legal mechanism that makes the pan-European standard possible without harmonising national tenancy law.
 
-**BGB §§ 1204 ff.** (Pfandrecht an beweglichen Sachen) governs the pledge mechanism. The `pledge` object in the XMiete schema maps directly to the legal elements of a valid pledge agreement.
+**National tenancy statutes** form the second layer, selected at runtime by the `meta.jurisdiction` field. The schema ships with normative mappings for the largest EU rental markets:
 
-**eIDAS Regulation (EU) No 910/2014 as amended by (EU) 2024/1183** provides the legal basis for EUDI Wallet credentials. A DepositPledgeAttestation issued by a regulated bank as a QEAA has the same legal standing across all 27 EU member states as a bank-issued paper document — this is the legal mechanism that makes the pan-European extension possible without harmonising national tenancy law.
+| Jurisdiction | Statutory basis | Deposit type |
+|---|---|---|
+| Germany (DE) | BGB § 551 · §§ 1204 ff. (Pfandrecht) | Treuhandkonto / Verpfändung |
+| Switzerland (CH) | OR Art. 257e | Gesperrtes Mietkautionskonto |
+| Austria (AT) | MRG § 16b | Kaution / Bankgarantie |
+| Belgium (BE) | Garantie locative · e-DEPO | State-held escrow |
+| Netherlands (NL) | BW Art. 7:261 | Waarborgsom |
+| Norway (NO) | Husleieloven § 3-5 | Depositumskonto |
+| United Kingdom (GB) | Housing Act 2004 (TDP) | Custodial / insured |
+| France (FR) | Loi ALUR Art. 22 | Dépôt de garantie |
+| Spain (ES) | LAU Art. 36 | Fianza legal |
 
-**ISO 20022** (financial messaging) ensures that the EBICS transport profile is interoperable with existing bank payment infrastructure. `pain.001` and `camt.054` are already implemented by every major German bank for SEPA processing.
+Implementers outside this list may supply a custom `statutory_basis` string; conformance is validated against the jurisdiction-specific JSON Schema extension module.
+
+**ISO 20022** (financial messaging) ensures that the EBICS transport profile is interoperable with existing bank payment infrastructure across Europe. `pain.001` and `camt.054` are already implemented by every major EU bank for SEPA processing.
 
 ---
 
@@ -122,9 +134,9 @@ XMiete follows the adoption model that has proven effective for xRechnung and xB
 
 **Phase 2 — Pilot (2026):** Onboard a minimum of two banks, two property management software vendors, and one deposit insurance provider to a joint pilot. Validate the schema against real deposit workflows. Produce a conformance test suite. Publish a pilot report.
 
-**Phase 3 — Industry recommendation (2027):** Seek endorsement from the German Banking Association (Bundesverband deutscher Banken), the Association of German Housing Companies (GdW), and the German Savings Banks Association (DSGV). Position XMiete as the recommended data exchange standard for digital rental deposits in Germany.
+**Phase 3 — Industry recommendation (2027):** Seek endorsement from pan-European banking associations (EBF, EACB, ESBG) and national equivalents (Bundesverband deutscher Banken, GdW, DSGV). Position XMiete as the recommended data exchange standard for digital rental deposits across EU member states.
 
-**Phase 4 — Regulatory pathway (2027+):** In Germany, seek inclusion in a "Digitale Annahmepflicht" for landlords — the regulatory equivalent of the E-Rechnungsverordnung for public bodies. At EU level, propose XMiete as a reference protocol for the European Banking Authority's (EBA) work on digital financial identity under eIDAS 2.0.
+**Phase 4 — Regulatory pathway (2027+):** Engage the European Banking Authority (EBA) and the European Commission (DG FISMA) to propose XMiete as a reference protocol under eIDAS 2.0 for the cross-border use of EUDI Wallet credentials in rental finance. At the national level, seek alignment with digital acceptance mandates — equivalent to the E-Rechnungsverordnung for public bodies — in at least three EU member states.
 
 ---
 
@@ -149,7 +161,7 @@ To be precise about scope is to be precise about governance. XMiete explicitly d
 - **Operate a registry.** XMiete defines the protocol; it does not run a central deposit register. Data stays at the bank and in the tenant's wallet.
 - **Set prices.** XMiete has no commercial model. It takes no transaction fee, no licensing fee, and no membership fee. While the specification itself is free and open, the AG XMiete may offer optional certification and support services to ensure industry-wide interoperability and quality control.
 - **Choose deposit types.** XMiete supports cash, bank guarantee, and insurance deposits equally. It does not advocate for any one product category.
-- **Replace national tenancy law.** XMiete profiles BGB § 551 for Germany. National modules for Austria (MRG § 16b), Belgium (Garantie locative), the Netherlands (Waarborgsom), and Switzerland (OR Art. 257e) are in scope for future working group deliverables.
+- **Replace national tenancy law.** XMiete profiles national statutes — it does not override them. The `meta.jurisdiction` field carries the applicable legal framework for each deposit object. No harmonisation of substantive tenancy law is required or intended.
 - **Control the identity market.** XMiete profiles eID and EUDI Wallet. Provider selection remains with the implementing party.
 
 ---
@@ -158,7 +170,7 @@ To be precise about scope is to be precise about governance. XMiete explicitly d
 
 The German internet gained its critical domain infrastructure when DENIC was founded in 1996 — not as a product, but as a neutral cooperative. German public administration gained a common e-invoicing standard when xRechnung was published under KoSIT — not by a vendor, but by a working group with a public mandate. German building permit processes gained a common data standard through xBau — not because a software vendor defined it, but because the public interest required it.
 
-The rental deposit market in Germany — and across Europe — has reached the same inflection point. €180 billion in annual deposit volume is locked in analogue workflows because no neutral party has stepped forward to define the shared protocol.
+The rental deposit market across Europe has reached the same inflection point. €180 billion in annual deposit volume — spread across 32 jurisdictions, each with its own statutory framework — is locked in analogue workflows because no neutral party has stepped forward to define the shared protocol.
 
 AG XMiete steps forward.
 
