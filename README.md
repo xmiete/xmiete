@@ -1,19 +1,27 @@
 # XMiete Core
 
-The open-source standard for digital rental deposits — BGB § 551 compliant, eIDAS 2.0 ready.
+The open-source standard for digital rental deposits — BGB § 551 compliant, eIDAS 2.0 ready, pan-European.
 
 ## Overview
 
-XMiete Core provides a unified JSON schema, OpenAPI specification, and reference server implementation to digitize the entire lifecycle of a rental deposit: from tenant identification and funding to legal pledge, QEAA credential issuance, and release.
+XMiete Core provides a unified JSON schema, OpenAPI specification, and reference server implementation to digitize the entire lifecycle of a rental deposit: from tenant identification and funding to legal pledge, QEAA credential issuance, and release. The standard covers all major EU rental markets under a single schema version.
 
 ## Features
 
-- **Modular Schema** — Supports `CASH_EQUIVALENT`, `BANK_GUARANTEE`, and `INSURANCE` deposit types.
+- **Modular Schema** — Supports `CASH_EQUIVALENT`, `BANK_GUARANTEE`, `INSURANCE`, and `SURETY` (personal guarantee / Bürgschaft) deposit types.
+- **Pan-European Jurisdictions** — Native support for DE, CH, AT, BE, NL, NO, GB, FR, ES; runtime-selected via `meta.jurisdiction`. Each jurisdiction carries its statutory basis and deposit-type constraints automatically.
+- **Personal Surety** — `guarantor` array models third-party guarantee arrangements (Elternbürgschaft, caution solidaire, GB deed guarantors). Jurisdiction-specific compliance flags enforced at schema level (FR Garantie Visale / ALUR Art. 22-1; BGB § 551 cap; GB deed execution).
 - **eID Integration** — Built-in eID verification status and EUDI Wallet credential presentation (PID, EAA, QEAA, MDL).
-- **QEAA Issuance Flow** — Banks can issue a legally-binding *DepositPledgeAttestation* QEAA directly into the tenant's EUDI Wallet via OpenID4VCI Pre-Authorized Code Flow. The SD-JWT credential replaces the physical pledge certificate and is legally recognized across the EU under eIDAS 2.0.
-- **Selective Disclosure** — Tenants control which credential claims to share (e.g., deposit amount without revealing their name).
-- **Credential Revocation** — Status endpoint for verifiers; credentials are automatically revoked when the deposit is released or closed.
-- **Legal Compliance** — Designed for BGB § 551 and eIDAS 2.0 / EUDI ARF requirements.
+- **QEAA Issuance Flow** — Banks issue a legally-binding *DepositPledgeAttestation* QEAA into the tenant's EUDI Wallet via OpenID4VCI Pre-Authorized Code Flow. The SD-JWT credential replaces the paper pledge certificate and is legally recognized across the EU under eIDAS 2.0.
+- **OpenID4VP Verification** — Verifiers can request selective disclosure of deposit credentials via OpenID for Verifiable Presentations; implemented across Go, Rust, and Java SDKs.
+- **Selective Disclosure** — Tenants control which credential claims to share (e.g., deposit amount without revealing name or property address).
+- **Credential Revocation** — Status endpoint for verifiers; credentials are automatically revoked on release or closure.
+- **Settlement Flow** — Itemized deduction model with structured landlord claims and tenant dispute handling prior to deposit release.
+- **Partial Release with Utility Reservation** — Landlords may release part of a deposit while reserving a utility cost buffer; the remainder follows a defined finalization path.
+- **PDF Release Receipt** — On deposit release, the server generates a signed Kautionsfreigabe PDF for both parties.
+- **EBICS Transport Profile** — Bank-grade batch processing via EBICS 3.0 (ISO 20022 `pain.001` / `camt.054`) for large banking institutions with existing SEPA infrastructure.
+- **Installment Plans & Interest Tracking** — Schema supports phased deposit funding and accrued interest attribution.
+- **Legal Compliance** — Designed for BGB § 551, eIDAS 2.0 / EUDI ARF, and national tenancy statutes across the EU.
 - **Tax Compliance** — Steuer-ID (11-digit) validation support.
 
 ## Provider Agnosticism
@@ -74,6 +82,20 @@ Verifier →  GET /v1/credentials/{id}/status
 
 See [`examples/qeaa_deposit_pledge_attestation.json`](examples/qeaa_deposit_pledge_attestation.json) for a decoded credential example.
 
+## Jurisdiction Support
+
+| Jurisdiction | Statutory basis | Deposit types |
+|---|---|---|
+| Germany (DE) | BGB § 551 · §§ 1204 ff. | Cash, Bank Guarantee, Surety (Bürgschaft) |
+| Switzerland (CH) | OR Art. 257e | Gesperrtes Mietkautionskonto |
+| Austria (AT) | MRG § 16b · ABGB § 1346 ff. | Kaution, Bankgarantie, Bürgschaft |
+| Belgium (BE) | Garantie locative · e-DEPO | State escrow; CPAS/OCMW social guarantee |
+| Netherlands (NL) | BW Art. 7:261 | Waarborgsom, Borgstelling |
+| Norway (NO) | Husleieloven § 3-5 | Depositumskonto |
+| United Kingdom (GB) | Housing Act 2004 (TDP) | Custodial, Insured, Guarantor agreements |
+| France (FR) | Loi ALUR Art. 22 · Code civil Art. 2288 | Dépôt de garantie, Caution solidaire/simple |
+| Spain (ES) | LAU Art. 36 | Fianza legal |
+
 ## Stakeholders
 
 - **Fintechs & Brands:** heykaution, GetMomo, PlusForta, Smartmiete
@@ -83,6 +105,8 @@ See [`examples/qeaa_deposit_pledge_attestation.json`](examples/qeaa_deposit_pled
 ## Getting Started
 
 The core of this project is [`xmiete_schema.json`](xmiete_schema.json). The reference server lives in [`server/`](server/). SDK examples for Go, Rust, Java, and TypeScript/Node.js are in [`sdk-examples/`](sdk-examples/).
+
+For a comprehensive overview of the standard's architecture, governance model, and adoption strategy see [`MANIFEST.md`](MANIFEST.md).
 
 ### Environment Variables (reference server)
 
@@ -97,14 +121,15 @@ The core of this project is [`xmiete_schema.json`](xmiete_schema.json). The refe
 
 | Priority | Item |
 |---|---|
-| High | **QEAA Issuance Flow — SDK implementations**: Port the server-side issuance flow (OpenID4VCI Pre-Authorized Code Flow, SD-JWT credential building, session management) to client SDK libraries in Go, Rust, and Java. TypeScript foundation is in place. |
-| Medium | **Persistent session store** — Replace in-memory issuance session store with Redis/DB-backed implementation for production deployments |
+| High | **Persistent session store** — Replace in-memory issuance session store with Redis/DB-backed implementation for production deployments |
+| High | **Conformance test suite** — Automated tests validating schema, lifecycle transitions, and credential issuance against all supported jurisdictions |
 | Medium | **Credential status list (CSL)** — Batch revocation via W3C Bitstring Status List instead of per-credential polling |
 | Medium | **Key management** — HSM / KMS integration for credential signing key (replace ephemeral ECDSA key) |
-| Medium | **Wallet-initiated issuance** — Authorization Code Flow variant for cases where the tenant's wallet initiates the issuance |
+| Medium | **Wallet-initiated issuance** — Authorization Code Flow variant for cases where the tenant's wallet initiates issuance |
+| Medium | **eIDAS Trust List integration** — Automated lookup of bank issuer trust anchors via EU Trust List |
 | Low | **Batch credential issuance** — OID4VCI batch endpoint for multi-tenant scenarios |
-| Low | **eIDAS Trust List integration** — Automated lookup of bank issuer trust anchors via EU Trust List |
 | Low | **Python SDK** — Schema models + eID + issuance flow client |
+| Low | **OpenAPI specification** — Formal OpenAPI 3.1 document for the REST transport profile |
 
 ## License
 

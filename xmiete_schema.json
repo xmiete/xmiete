@@ -527,6 +527,20 @@
             "type": "boolean",
             "description": "FR only: set to true if the tenant is a student. Students are exempt from the ALUR Art. 22-1 prohibition, permitting the landlord to require a personal guarantor even when holding a Garantie Visale."
           },
+          "guarantor_category": {
+            "type": "string",
+            "enum": ["PERSONAL", "COMMERCIAL"],
+            "description": "PERSONAL: private individual guarantor. Form consequences by jurisdiction: DE — § 766 BGB S. 2 explicitly excludes electronic form; wet-ink only, QES does not help. CH — OR Art. 493 requires written form + handwritten signature for amounts > CHF 2,000; a QES from a recognised trust service provider satisfies this (unlike DE), but simple electronic signatures do not. AT — Schriftform required (KSchG consumer protection), but QES fully substitutes under the Austrian Signaturgesetz. FR — Art. 2297 CCiv (post-2021 reform) requires a specific written mention for consumer guarantors; QES accepted. GB — Statute of Frauds 1677 requires writing + signature; electronic writing and qualified e-signatures accepted under ECA 2000. COMMERCIAL: company or registered Kaufmann/trader — HGB § 350 (DE), OR Art. 493 Abs. 2 (CH), and equivalents elsewhere suspend all form requirements; guarantee may be concluded electronically in any XMiete jurisdiction."
+          },
+          "signature_formality": {
+            "type": "string",
+            "enum": ["WET_INK", "QES", "DEED", "ELECTRONIC"],
+            "description": "How the guarantee declaration was executed. WET_INK: handwritten signature on a physical document — the only option for PERSONAL guarantors in DE/AT under § 766 BGB S. 2. QES: qualified electronic signature (eIDAS Art. 3(12)); valid for COMMERCIAL guarantors (HGB § 350) and in jurisdictions that do not exclude electronic form (GB, FR, NL, BE, NO). DEED: executed as a deed — GB/IE only; requires signing, witnessing, and delivery; use alongside executed_as_deed: true. ELECTRONIC: simple or advanced electronic signature; valid only where statute permits (non-DE/AT personal guarantors; commercial guarantors everywhere). Implementers MUST validate that PERSONAL guarantors in DE/AT use WET_INK — any other value is legally void under current German law."
+          },
+          "document_hash": {
+            "type": "string",
+            "description": "SHA-256 hex digest of the canonical guarantee document (scanned signed PDF for WET_INK; signed payload for QES/DEED). Provides a tamper-evident link between this schema record and the legal instrument. Recommended for all guarantors; required for WET_INK to establish that the bank has received and holds the signed original."
+          },
           "signed_at": {
             "type": "string",
             "format": "date-time",
@@ -555,6 +569,72 @@
         "required": ["guarantor"],
         "properties": {
           "guarantor": { "minItems": 1 }
+        }
+      }
+    },
+    {
+      "description": "DE personal guarantors: § 766 BGB S. 2 explicitly excludes electronic form — uniquely among XMiete jurisdictions, even a QES does not satisfy the formality requirement. PERSONAL guarantors in Germany must use WET_INK. COMMERCIAL guarantors (HGB § 350) are exempt from all form requirements and may use any signature_formality. Note: Austria (AT) does NOT share this prohibition — Austrian QES satisfies Schriftform under the Signaturgesetz.",
+      "if": {
+        "properties": {
+          "meta": {
+            "properties": {
+              "jurisdiction": { "const": "DE" }
+            },
+            "required": ["jurisdiction"]
+          }
+        },
+        "required": ["meta", "guarantor"]
+      },
+      "then": {
+        "properties": {
+          "guarantor": {
+            "type": "array",
+            "items": {
+              "if": {
+                "properties": { "guarantor_category": { "const": "PERSONAL" } },
+                "required": ["guarantor_category"]
+              },
+              "then": {
+                "properties": {
+                  "signature_formality": { "const": "WET_INK" }
+                },
+                "required": ["guarantor_category", "signature_formality"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "CH personal guarantors: OR Art. 493 requires written form with the guarantor's handwritten signature for private individuals guaranteeing amounts over CHF 2,000. Unlike § 766 BGB S. 2 (DE), Swiss law does NOT explicitly exclude electronic form — a QES issued by a recognised Swiss or EU trust service provider satisfies the handwritten-signature requirement under ZertES (SR 943.03). Simple or advanced electronic signatures (ELECTRONIC) do not. EUDI Wallet QES is accepted in Switzerland only where the wallet provider is listed on the EU Trusted List and cross-recognised under the CH-EU mutual recognition framework.",
+      "if": {
+        "properties": {
+          "meta": {
+            "properties": {
+              "jurisdiction": { "const": "CH" }
+            },
+            "required": ["jurisdiction"]
+          }
+        },
+        "required": ["meta", "guarantor"]
+      },
+      "then": {
+        "properties": {
+          "guarantor": {
+            "type": "array",
+            "items": {
+              "if": {
+                "properties": { "guarantor_category": { "const": "PERSONAL" } },
+                "required": ["guarantor_category"]
+              },
+              "then": {
+                "properties": {
+                  "signature_formality": { "enum": ["WET_INK", "QES"] }
+                },
+                "required": ["guarantor_category", "signature_formality"]
+              }
+            }
+          }
         }
       }
     }
