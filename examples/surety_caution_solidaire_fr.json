@@ -1,0 +1,72 @@
+{
+  "meta": {
+    "version": "2.2.0",
+    "timestamp": "2026-05-18T10:00:00Z",
+    "jurisdiction": "FR",
+    "external_id": "FR-SURETY-001"
+  },
+  "tenant": {
+    "first_name": "Léa",
+    "last_name": "Dupont",
+    "email": "lea.dupont@example.fr",
+    "eid_status": "NOT_STARTED",
+    "address": {
+      "street": "15 Rue de la Paix",
+      "zip": "75002",
+      "city": "Paris",
+      "country": "FR"
+    }
+  },
+  "landlord": {
+    "name": "Agence Immobilière Centrale",
+    "type": "COMMERCIAL"
+  },
+  "property": {
+    "address": {
+      "street": "8 Avenue Victor Hugo",
+      "zip": "75016",
+      "city": "Paris",
+      "country": "FR"
+    }
+  },
+  "lease": {
+    "monthly_cold_rent": 1200.00,
+    "currency": "EUR",
+    "lease_start": "2026-07-01"
+  },
+  "deposit": {
+    "amount": 1200.00,
+    "currency": "EUR",
+    "type": "SURETY",
+    "lifecycle_state": "FUNDED",
+    "history": [
+      { "state": "REQUESTED", "timestamp": "2026-05-12T09:00:00Z", "actor": "LANDLORD" },
+      { "state": "FUNDED",    "timestamp": "2026-05-18T10:00:00Z", "actor": "GUARANTOR" }
+    ]
+  },
+  "guarantor": [
+    {
+      "name": "Jean-Pierre Dupont",
+      "address": {
+        "street": "22 Rue des Fleurs",
+        "zip": "69001",
+        "city": "Lyon",
+        "country": "FR"
+      },
+      "email": "jp.dupont@example.fr",
+      "relationship": "PARENT",
+      "guarantee_type": "CAUTION_SOLIDAIRE",
+      "statutory_basis": "Art. 2288 Code civil",
+      "scope": ["ALL"],
+      "uncapped": false,
+      "cap_amount": 14400.00,
+      "cap_currency": "EUR",
+      "validity_start": "2026-07-01",
+      "validity_follows_tenancy": true,
+      "fr_visale_held": false,
+      "fr_visale_student_exception": false,
+      "signed_at": "2026-05-18T10:00:00Z",
+      "document_ref": "doc:caution-solidaire-lea-dupont-2026"
+    }
+  ]
+}

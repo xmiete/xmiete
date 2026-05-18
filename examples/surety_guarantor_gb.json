@@ -1,0 +1,73 @@
+{
+  "meta": {
+    "version": "2.2.0",
+    "timestamp": "2026-05-18T10:00:00Z",
+    "jurisdiction": "GB",
+    "jurisdiction_sub": "GB-ENG",
+    "external_id": "GB-SURETY-001"
+  },
+  "tenant": {
+    "first_name": "Oliver",
+    "last_name": "Chen",
+    "email": "oliver.chen@example.co.uk",
+    "eid_status": "NOT_STARTED",
+    "address": {
+      "street": "12 Lecture Lane",
+      "zip": "M13 9PL",
+      "city": "Manchester",
+      "country": "GB"
+    }
+  },
+  "landlord": {
+    "name": "Northern Student Lets Ltd",
+    "type": "COMMERCIAL",
+    "iban": "GB29NWBK60161331926819"
+  },
+  "property": {
+    "address": {
+      "street": "4 Oxford Road",
+      "zip": "M1 5QA",
+      "city": "Manchester",
+      "country": "GB"
+    }
+  },
+  "lease": {
+    "monthly_warm_rent": 875.00,
+    "currency": "GBP",
+    "lease_start": "2026-09-01",
+    "lease_end": "2027-07-31"
+  },
+  "deposit": {
+    "amount": 1009.61,
+    "currency": "GBP",
+    "type": "SURETY",
+    "lifecycle_state": "FUNDED",
+    "history": [
+      { "state": "REQUESTED", "timestamp": "2026-05-10T10:00:00Z", "actor": "LANDLORD" },
+      { "state": "FUNDED",    "timestamp": "2026-05-18T10:00:00Z", "actor": "GUARANTOR" }
+    ]
+  },
+  "guarantor": [
+    {
+      "name": "David Chen",
+      "address": {
+        "street": "88 Maple Avenue",
+        "zip": "SW1A 1AA",
+        "city": "London",
+        "country": "GB"
+      },
+      "email": "david.chen@example.co.uk",
+      "relationship": "PARENT",
+      "guarantee_type": "STANDARD",
+      "statutory_basis": "CONTRACT",
+      "scope": ["ALL"],
+      "uncapped": true,
+      "validity_start": "2026-09-01",
+      "validity_end": "2027-07-31",
+      "validity_follows_tenancy": false,
+      "executed_as_deed": true,
+      "signed_at": "2026-05-18T09:30:00Z",
+      "document_ref": "doc:guarantor-deed-oliver-chen-2026"
+    }
+  ]
+}

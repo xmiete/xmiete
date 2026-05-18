@@ -1,0 +1,73 @@
+{
+  "meta": {
+    "version": "2.2.0",
+    "timestamp": "2026-05-18T10:00:00Z",
+    "jurisdiction": "DE",
+    "external_id": "DE-SURITY-001"
+  },
+  "tenant": {
+    "first_name": "Jonas",
+    "last_name": "Weber",
+    "email": "jonas.weber@example.de",
+    "tax_id": "12345678901",
+    "tax_id_type": "STEUER_ID",
+    "eid_status": "NOT_STARTED",
+    "address": {
+      "street": "Studentenweg 3",
+      "zip": "10117",
+      "city": "Berlin",
+      "country": "DE"
+    }
+  },
+  "landlord": {
+    "name": "Stadtring Verwaltungs GmbH",
+    "type": "COMMERCIAL",
+    "iban": "DE89370400440532013000"
+  },
+  "property": {
+    "address": {
+      "street": "Torstr. 22",
+      "zip": "10119",
+      "city": "Berlin",
+      "country": "DE"
+    }
+  },
+  "lease": {
+    "monthly_cold_rent": 950.00,
+    "currency": "EUR",
+    "lease_start": "2026-06-01"
+  },
+  "deposit": {
+    "amount": 2850.00,
+    "currency": "EUR",
+    "type": "SURETY",
+    "lifecycle_state": "FUNDED",
+    "history": [
+      { "state": "REQUESTED", "timestamp": "2026-05-10T09:00:00Z", "actor": "LANDLORD" },
+      { "state": "FUNDED",    "timestamp": "2026-05-18T10:00:00Z", "actor": "GUARANTOR" }
+    ]
+  },
+  "guarantor": [
+    {
+      "name": "Petra Weber",
+      "address": {
+        "street": "Ahornweg 7",
+        "zip": "70174",
+        "city": "Stuttgart",
+        "country": "DE"
+      },
+      "email": "petra.weber@example.de",
+      "relationship": "PARENT",
+      "guarantee_type": "SELBSTSCHULDNERISCH",
+      "statutory_basis": "BGB § 765",
+      "scope": ["ALL"],
+      "uncapped": false,
+      "cap_amount": 2850.00,
+      "cap_currency": "EUR",
+      "validity_start": "2026-06-01",
+      "validity_follows_tenancy": true,
+      "signed_at": "2026-05-18T09:45:00Z",
+      "document_ref": "doc:elternbuergschaft-jonas-weber-2026"
+    }
+  ]
+}

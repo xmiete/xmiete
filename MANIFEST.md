@@ -1,5 +1,5 @@
 # XMiete Technical Manifest
-**Version 0.2 — May 2026**
+**Version 0.3 — May 2026**
 **AG XMiete · xmiete.org**
 
 ---
@@ -64,9 +64,10 @@ The XMiete Core Schema (`xmiete_schema.json`, JSON Schema Draft 07) defines the 
 
 Key design properties:
 - **Jurisdiction-aware field semantics.** The `meta.jurisdiction` field selects the applicable national legal framework; field constraints adapt accordingly — BGB § 551 (DE), Art. 257e CO (CH), Housing Act 2004 (UK), Garantie locative (BE), Husleieloven § 3-5 (NO), and so on. XMiete carries the law of the deposit, not just its data.
-- **Provider-agnostic.** The `provider` object supports all three deposit types (cash equivalent, bank guarantee, insurance) and all four provider archetypes (direct bank, fintech platform, insurance broker, bank system partner) under a single schema.
+- **Provider-agnostic.** The `provider` object supports all four deposit types (cash equivalent, bank guarantee, insurance, personal surety) and all four provider archetypes (direct bank, fintech platform, insurance broker, bank system partner) under a single schema.
 - **Lifecycle state machine.** The `deposit.lifecycle_state` field defines a normative seven-state machine (`REQUESTED → IDENTIFIED → FUNDED → PLEDGED → RELEASED → CLAIMED → CLOSED`) with non-repudiable JWS-signed state transitions in the audit history.
 - **Modular identity integration.** The `tenant.eid_status` field and `wallet_metadata` object support any national eID scheme compliant with eIDAS LoA "High" today and EUDI Wallet QEAA credentials (PID, EAA) as they become available under eIDAS 2.0.
+- **Personal surety support.** The `guarantor` array models third-party guarantee arrangements alongside or in place of a cash deposit. It captures the legal form of the guarantee (DE `SELBSTSCHULDNERISCH` / `AUSFALLBUERGSCHAFT`; FR `CAUTION_SOLIDAIRE` / `CAUTION_SIMPLE`; GB/NL/IE `STANDARD`), the guarantor's relationship to the tenant (parent, employer, third party, state body), the scope and cap of liability, and jurisdiction-specific compliance flags (FR Garantie Visale / ALUR Art. 22-1; GB deed execution). A schema-level conditional enforces that any deposit of type `SURETY` carries at least one guarantor entry.
 
 ### 4.2 Identity Layer — eID and EUDI Wallet
 
@@ -111,16 +112,19 @@ XMiete does not create new law. It operationalises existing law — at two level
 | Jurisdiction | Statutory basis | Deposit type |
 |---|---|---|
 | Germany (DE) | BGB § 551 · §§ 1204 ff. (Pfandrecht) | Treuhandkonto / Verpfändung |
+| Germany (DE) — personal surety | BGB § 765 (Bürgschaft) | Elternbürgschaft / selbstschuldnerische Bürgschaft |
 | Switzerland (CH) | OR Art. 257e | Gesperrtes Mietkautionskonto |
-| Austria (AT) | MRG § 16b | Kaution / Bankgarantie |
-| Belgium (BE) | Garantie locative · e-DEPO | State-held escrow |
-| Netherlands (NL) | BW Art. 7:261 | Waarborgsom |
+| Austria (AT) | MRG § 16b · ABGB § 1346 ff. | Kaution / Bankgarantie / Bürgschaft |
+| Belgium (BE) | Garantie locative · e-DEPO | State-held escrow; CPAS/OCMW social guarantee via `STATE_BODY` |
+| Netherlands (NL) | BW Art. 7:261 | Waarborgsom / borgstelling |
 | Norway (NO) | Husleieloven § 3-5 | Depositumskonto |
-| United Kingdom (GB) | Housing Act 2004 (TDP) | Custodial / insured |
-| France (FR) | Loi ALUR Art. 22 | Dépôt de garantie |
+| United Kingdom (GB) | Housing Act 2004 (TDP) | Custodial / insured; guarantor agreements (contractual) |
+| France (FR) | Loi ALUR Art. 22 · Art. 2288 Code civil | Dépôt de garantie / caution solidaire / caution simple |
 | Spain (ES) | LAU Art. 36 | Fianza legal |
 
 Implementers outside this list may supply a custom `statutory_basis` string; conformance is validated against the jurisdiction-specific JSON Schema extension module.
+
+**Personal surety cross-jurisdiction note.** Where a landlord accepts a personal guarantee in lieu of or alongside a cash deposit, the `deposit.type` is set to `SURETY` and the `guarantor` array carries the full guarantee terms. The schema enforces the most critical jurisdiction-specific constraint automatically: in France, if the landlord holds a Garantie Visale, requiring a personal guarantor is prohibited under ALUR Art. 22-1 unless the tenant is a student — both conditions are captured in `fr_visale_held` and `fr_visale_student_exception`. In Germany, courts frequently apply the BGB § 551 three-month cold-rent cap to Bürgschaften by analogy when they substitute for a Mietkaution; `cap_amount` is the normative field for recording this limit. In the United Kingdom, guarantor agreements must explicitly bind the guarantor to lease renewals (`validity_follows_tenancy`) and are often — but not always — required to be executed as deeds (`executed_as_deed`) to be enforceable beyond the fixed term.
 
 **ISO 20022** (financial messaging) ensures that the EBICS transport profile is interoperable with existing bank payment infrastructure across Europe. `pain.001` and `camt.054` are already implemented by every major EU bank for SEPA processing.
 
@@ -160,7 +164,7 @@ To be precise about scope is to be precise about governance. XMiete explicitly d
 
 - **Operate a registry.** XMiete defines the protocol; it does not run a central deposit register. Data stays at the bank and in the tenant's wallet.
 - **Set prices.** XMiete has no commercial model. It takes no transaction fee, no licensing fee, and no membership fee. While the specification itself is free and open, the AG XMiete may offer optional certification and support services to ensure industry-wide interoperability and quality control.
-- **Choose deposit types.** XMiete supports cash, bank guarantee, and insurance deposits equally. It does not advocate for any one product category.
+- **Choose deposit types.** XMiete supports cash, bank guarantee, insurance, and personal surety deposits equally. It does not advocate for any one product category.
 - **Replace national tenancy law.** XMiete profiles national statutes — it does not override them. The `meta.jurisdiction` field carries the applicable legal framework for each deposit object. No harmonisation of substantive tenancy law is required or intended.
 - **Control the identity market.** XMiete profiles eID and EUDI Wallet. Provider selection remains with the implementing party.
 

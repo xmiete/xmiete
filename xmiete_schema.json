@@ -17,7 +17,7 @@
       "type": "object",
       "required": ["version", "timestamp", "jurisdiction"],
       "properties": {
-        "version": { "type": "string", "const": "2.1.0" },
+        "version": { "type": "string", "const": "2.2.0" },
         "timestamp": { "type": "string", "format": "date-time" },
         "jurisdiction": {
           "type": "string",
@@ -105,7 +105,8 @@
         "currency": { "type": "string", "pattern": "^[A-Z]{3}$", "default": "EUR" },
         "type": {
           "type": "string",
-          "enum": ["CASH_EQUIVALENT", "BANK_GUARANTEE", "INSURANCE"]
+          "enum": ["CASH_EQUIVALENT", "BANK_GUARANTEE", "INSURANCE", "SURETY"],
+          "description": "CASH_EQUIVALENT: tenant pays cash into a segregated account or government-approved scheme. BANK_GUARANTEE: bank issues a guarantee in lieu of cash — tenant retains liquidity. INSURANCE: deposit insurance product (annual premium paid by tenant; insurer covers landlord claims). SURETY: personal guarantee by a third party (parent, employer, or other individual); guarantor contractually promises to cover tenant obligations. Requires at least one guarantor[] entry."
         },
         "lifecycle_state": {
           "type": "string",
@@ -447,8 +448,117 @@
         "agreed_tenant_refund": { "type": "number", "minimum": 0, "description": "Set on CLOSED — final amount returned to tenant." },
         "agreed_landlord_retention": { "type": "number", "minimum": 0, "description": "Set on CLOSED — final amount retained by landlord." }
       }
+    },
+    "guarantor": {
+      "type": "array",
+      "description": "Personal surety arrangements — one entry per guarantor. Present when deposit.type is SURETY (primary security is a personal guarantee, no cash deposit) or alongside a cash deposit when the landlord requires additional guarantor security (common in GB student lettings). Most jurisdictions use a single guarantor; multiple entries are valid (e.g. FR co-cautions, GB joint guarantors).",
+      "items": {
+        "type": "object",
+        "required": ["name", "guarantee_type", "scope"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Full legal name of the guarantor."
+          },
+          "address": { "$ref": "#/definitions/address" },
+          "email": { "type": "string", "format": "email" },
+          "phone": { "type": "string" },
+          "relationship": {
+            "type": "string",
+            "enum": ["PARENT", "EMPLOYER", "THIRD_PARTY", "STATE_BODY"],
+            "description": "Guarantor's relationship to the tenant. PARENT: parental guarantee (DE Elternbürgschaft, FR caution parentale, GB common for student lettings). EMPLOYER: employer acts as guarantor. THIRD_PARTY: any other private individual or company. STATE_BODY: public body guarantee (LU state guarantee for low-income tenants; BE CPAS/OCMW social guarantee)."
+          },
+          "guarantee_type": {
+            "type": "string",
+            "enum": ["SELBSTSCHULDNERISCH", "AUSFALLBUERGSCHAFT", "CAUTION_SOLIDAIRE", "CAUTION_SIMPLE", "STANDARD"],
+            "description": "Legal form of the guarantee. SELBSTSCHULDNERISCH: DE/AT — solidary guarantee (§ 773 BGB Abs. 1 Nr. 1 waiver); landlord can pursue guarantor directly without first exhausting remedies against tenant — the variant most landlords require. AUSFALLBUERGSCHAFT: DE/AT — deficiency/subsidiary guarantee; landlord must first prove the tenant is unable to pay before claiming against the guarantor. CAUTION_SOLIDAIRE: FR — solidary surety (Art. 2298 Code civil); same practical effect as SELBSTSCHULDNERISCH. CAUTION_SIMPLE: FR — simple surety; guarantor can invoke the beneficium excussionis, requiring the landlord to pursue tenant assets first. STANDARD: GB/IE/NL/Nordics and all other jurisdictions — general contractual guarantor; specific liability rules are governed by the guarantor agreement itself."
+          },
+          "statutory_basis": {
+            "type": "string",
+            "description": "Jurisdiction-specific statutory basis for the guarantee (e.g. 'BGB § 765' for DE, 'Art. 2288 Code civil' for FR, 'CONTRACT' for GB/IE where guarantor agreements are purely contractual with no specific tenancy statute)."
+          },
+          "scope": {
+            "type": "array",
+            "description": "What the guarantee covers. RENT_ARREARS: unpaid rent. DAMAGE: physical damage beyond normal wear and tear. CLEANING: end-of-tenancy cleaning costs. LEGAL_COSTS: landlord's recovery costs. ALL: full liability for all tenant obligations under the lease — use ['ALL'] rather than listing each category individually.",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "enum": ["RENT_ARREARS", "DAMAGE", "CLEANING", "LEGAL_COSTS", "ALL"]
+            }
+          },
+          "uncapped": {
+            "type": "boolean",
+            "description": "If true, no monetary cap applies — guarantor is liable for the full extent of tenant obligations. Common in GB student lettings. When true, omit cap_amount."
+          },
+          "cap_amount": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Maximum monetary liability of the guarantor. In DE, courts often apply the BGB § 551 3-month cold-rent cap by analogy when a Bürgschaft substitutes for a Mietkaution. Omit when uncapped is true."
+          },
+          "cap_currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "default": "EUR",
+            "description": "ISO 4217 currency of cap_amount."
+          },
+          "validity_start": {
+            "type": "string",
+            "format": "date",
+            "description": "Date from which the guarantee is effective. Typically the lease start date."
+          },
+          "validity_end": {
+            "type": "string",
+            "format": "date",
+            "description": "Contractual expiry of the guarantee. Absent if the guarantee runs for the full tenancy duration or is open-ended."
+          },
+          "validity_follows_tenancy": {
+            "type": "boolean",
+            "description": "If true, the guarantee is explicitly bound to the full tenancy including any renewals or extensions. In GB, guarantors must explicitly agree to be bound by lease renewals — this field records that agreement."
+          },
+          "executed_as_deed": {
+            "type": "boolean",
+            "description": "GB/IE only: whether the guarantor agreement was executed as a deed (signed, witnessed, and delivered). Recommended in GB where the tenancy agreement itself is a deed and for guarantees intended to survive lease renewals."
+          },
+          "fr_visale_held": {
+            "type": "boolean",
+            "description": "FR only: set to true if the landlord also holds a Garantie Visale for this tenancy. If true and fr_visale_student_exception is not true, requiring a personal guarantor violates ALUR Art. 22-1 — a landlord holding Garantie Visale may not also demand a caution personnelle, except for student tenants."
+          },
+          "fr_visale_student_exception": {
+            "type": "boolean",
+            "description": "FR only: set to true if the tenant is a student. Students are exempt from the ALUR Art. 22-1 prohibition, permitting the landlord to require a personal guarantor even when holding a Garantie Visale."
+          },
+          "signed_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of guarantor signature on the guarantee agreement."
+          },
+          "document_ref": {
+            "type": "string",
+            "description": "Reference to the signed guarantor agreement (file ID, URL, or document management system identifier)."
+          }
+        }
+      }
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "deposit": {
+            "properties": { "type": { "const": "SURETY" } },
+            "required": ["type"]
+          }
+        },
+        "required": ["deposit"]
+      },
+      "then": {
+        "required": ["guarantor"],
+        "properties": {
+          "guarantor": { "minItems": 1 }
+        }
+      }
+    }
+  ],
   "definitions": {
     "wallet_metadata": {
       "type": "object",
