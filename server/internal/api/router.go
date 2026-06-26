@@ -37,6 +37,9 @@ func NewRouter(s *Server, jwtSecret string) http.Handler {
 		w.Write([]byte(`{"status":"ok"}`)) //nolint:errcheck
 	})
 
+	// Public conformance validator — no auth, stateless
+	r.Post("/validate", s.Validate)
+
 	// OID4VCI well-known discovery — public, no auth
 	r.Get("/.well-known/openid-credential-issuer", s.IssuerMetadata)
 	r.Get("/.well-known/jwks.json", s.JWKS)
