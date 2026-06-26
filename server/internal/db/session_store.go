@@ -37,7 +37,7 @@ func NewPostgresSessionStore(pool *pgxpool.Pool) *PostgresSessionStore {
 	return &PostgresSessionStore{pool: pool}
 }
 
-func (s *PostgresSessionStore) Create(ctx context.Context, depositID, validUntil string) (*issuance.Session, error) {
+func (s *PostgresSessionStore) Create(ctx context.Context, depositID, validUntil string, statusListIndex int) (*issuance.Session, error) {
 	sess := &issuance.Session{
 		ID:                uuid.NewString(),
 		DepositID:         depositID,
@@ -47,13 +47,14 @@ func (s *PostgresSessionStore) Create(ctx context.Context, depositID, validUntil
 		CreatedAt:         time.Now().UTC(),
 		ExpiresAt:         time.Now().UTC().Add(15 * time.Minute),
 		ValidUntil:        validUntil,
+		StatusListIndex:   statusListIndex,
 	}
 	_, err := s.pool.Exec(ctx,
 		`INSERT INTO issuance_sessions
-		 (id, deposit_id, pre_authorized_code, nonce, state, created_at, expires_at, valid_until)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		 (id, deposit_id, pre_authorized_code, nonce, state, created_at, expires_at, valid_until, status_list_index)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 		sess.ID, sess.DepositID, sess.PreAuthorizedCode, sess.Nonce,
-		string(sess.State), sess.CreatedAt, sess.ExpiresAt, sess.ValidUntil,
+		string(sess.State), sess.CreatedAt, sess.ExpiresAt, sess.ValidUntil, sess.StatusListIndex,
 	)
 	if err != nil {
 		return nil, err
@@ -64,21 +65,21 @@ func (s *PostgresSessionStore) Create(ctx context.Context, depositID, validUntil
 func (s *PostgresSessionStore) GetByID(ctx context.Context, id string) (*issuance.Session, bool) {
 	return s.queryOne(ctx, `SELECT id, deposit_id, pre_authorized_code,
 		COALESCE(access_token,''), COALESCE(nonce,''), state, created_at, expires_at,
-		COALESCE(credential_id,''), COALESCE(valid_until,'')
+		COALESCE(credential_id,''), COALESCE(valid_until,''), COALESCE(status_list_index,0)
 		FROM issuance_sessions WHERE id = $1`, id)
 }
 
 func (s *PostgresSessionStore) GetByCode(ctx context.Context, code string) (*issuance.Session, bool) {
 	return s.queryOne(ctx, `SELECT id, deposit_id, pre_authorized_code,
 		COALESCE(access_token,''), COALESCE(nonce,''), state, created_at, expires_at,
-		COALESCE(credential_id,''), COALESCE(valid_until,'')
+		COALESCE(credential_id,''), COALESCE(valid_until,''), COALESCE(status_list_index,0)
 		FROM issuance_sessions WHERE pre_authorized_code = $1`, code)
 }
 
 func (s *PostgresSessionStore) GetByToken(ctx context.Context, token string) (*issuance.Session, bool) {
 	return s.queryOne(ctx, `SELECT id, deposit_id, pre_authorized_code,
 		COALESCE(access_token,''), COALESCE(nonce,''), state, created_at, expires_at,
-		COALESCE(credential_id,''), COALESCE(valid_until,'')
+		COALESCE(credential_id,''), COALESCE(valid_until,''), COALESCE(status_list_index,0)
 		FROM issuance_sessions WHERE access_token = $1`, token)
 }
 
@@ -138,11 +139,13 @@ func (s *PostgresSessionStore) ConsumeByToken(ctx context.Context, token, creden
 
 	var id, depositID, code, nonce, state, validUntil string
 	var createdAt, expiresAt time.Time
+	var statusListIndex int
 	err = tx.QueryRow(ctx,
-		`SELECT id, deposit_id, pre_authorized_code, COALESCE(nonce,''), state, created_at, expires_at, COALESCE(valid_until,'')
+		`SELECT id, deposit_id, pre_authorized_code, COALESCE(nonce,''), state, created_at, expires_at,
+		 COALESCE(valid_until,''), COALESCE(status_list_index,0)
 		 FROM issuance_sessions WHERE access_token = $1 FOR UPDATE`,
 		token,
-	).Scan(&id, &depositID, &code, &nonce, &state, &createdAt, &expiresAt, &validUntil)
+	).Scan(&id, &depositID, &code, &nonce, &state, &createdAt, &expiresAt, &validUntil, &statusListIndex)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, false
 	}
@@ -178,6 +181,7 @@ func (s *PostgresSessionStore) ConsumeByToken(ctx context.Context, token, creden
 		ExpiresAt:         expiresAt,
 		CredentialID:      credentialID,
 		ValidUntil:        validUntil,
+		StatusListIndex:   statusListIndex,
 	}, true
 }
 
@@ -212,6 +216,28 @@ func (s *PostgresSessionStore) CredentialStatus(ctx context.Context, credID stri
 	return "active", true
 }
 
+// RevokedStatusListIndices returns the status list indices of all REVOKED sessions.
+func (s *PostgresSessionStore) RevokedStatusListIndices(ctx context.Context) ([]int, error) {
+	rows, err := s.pool.Query(ctx,
+		`SELECT COALESCE(status_list_index, 0) FROM issuance_sessions
+		 WHERE state = $1 AND status_list_index IS NOT NULL`,
+		string(issuance.SessionStateRevoked),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []int
+	for rows.Next() {
+		var idx int
+		if err := rows.Scan(&idx); err != nil {
+			return nil, err
+		}
+		out = append(out, idx)
+	}
+	return out, rows.Err()
+}
+
 // queryOne is a helper that scans a single session row.
 func (s *PostgresSessionStore) queryOne(ctx context.Context, q string, arg any) (*issuance.Session, bool) {
 	var sess issuance.Session
@@ -220,7 +246,7 @@ func (s *PostgresSessionStore) queryOne(ctx context.Context, q string, arg any) 
 		&sess.ID, &sess.DepositID, &sess.PreAuthorizedCode,
 		&sess.AccessToken, &sess.Nonce, &state,
 		&sess.CreatedAt, &sess.ExpiresAt,
-		&sess.CredentialID, &sess.ValidUntil,
+		&sess.CredentialID, &sess.ValidUntil, &sess.StatusListIndex,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, false

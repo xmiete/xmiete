@@ -21,7 +21,8 @@ import "context"
 // The in-memory Store satisfies this interface for testing and local development.
 // Production deployments use a DB-backed implementation (db.PostgresSessionStore).
 type SessionStore interface {
-	Create(ctx context.Context, depositID, validUntil string) (*Session, error)
+	// statusListIndex is the position in the W3C Bitstring Status List assigned to this credential.
+	Create(ctx context.Context, depositID, validUntil string, statusListIndex int) (*Session, error)
 	GetByID(ctx context.Context, id string) (*Session, bool)
 	GetByCode(ctx context.Context, code string) (*Session, bool)
 	GetByToken(ctx context.Context, token string) (*Session, bool)
@@ -29,4 +30,7 @@ type SessionStore interface {
 	ConsumeByToken(ctx context.Context, token, credentialID string) (*Session, bool)
 	RevokeByDepositID(ctx context.Context, depositID string)
 	CredentialStatus(ctx context.Context, credID string) (string, bool)
+	// RevokedStatusListIndices returns the status list indices of all REVOKED credentials.
+	// Used by GET /v1/status-list/revocation to build the W3C BitstringStatusListCredential.
+	RevokedStatusListIndices(ctx context.Context) ([]int, error)
 }

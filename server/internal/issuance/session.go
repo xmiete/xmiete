@@ -44,6 +44,7 @@ type Session struct {
 	ExpiresAt         time.Time
 	CredentialID      string // set after credential is issued
 	ValidUntil        string // ISO 8601 date; pledge end date passed by bank
+	StatusListIndex   int    // index in the W3C Bitstring Status List
 }
 
 // Store is a thread-safe in-memory SessionStore.
@@ -65,7 +66,7 @@ func NewStore() *Store {
 	}
 }
 
-func (s *Store) Create(_ context.Context, depositID, validUntil string) (*Session, error) {
+func (s *Store) Create(_ context.Context, depositID, validUntil string, statusListIndex int) (*Session, error) {
 	sess := &Session{
 		ID:                uuid.NewString(),
 		DepositID:         depositID,
@@ -75,6 +76,7 @@ func (s *Store) Create(_ context.Context, depositID, validUntil string) (*Sessio
 		CreatedAt:         time.Now().UTC(),
 		ExpiresAt:         time.Now().UTC().Add(15 * time.Minute),
 		ValidUntil:        validUntil,
+		StatusListIndex:   statusListIndex,
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -146,6 +148,19 @@ func (s *Store) RevokeByDepositID(_ context.Context, depositID string) {
 			sess.State = SessionStateRevoked
 		}
 	}
+}
+
+// RevokedStatusListIndices returns the status list index of every REVOKED session.
+func (s *Store) RevokedStatusListIndices(_ context.Context) ([]int, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []int
+	for _, sess := range s.byCred {
+		if sess.State == SessionStateRevoked {
+			out = append(out, sess.StatusListIndex)
+		}
+	}
+	return out, nil
 }
 
 // CredentialStatus returns the status of a credential by its ID.

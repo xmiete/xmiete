@@ -48,6 +48,9 @@ func NewRouter(s *Server, jwtSecret string) http.Handler {
 		r.Post("/credential", s.Credential)
 		r.Get("/credentials/{credentialId}/status", s.CredentialStatus)
 
+		// W3C Bitstring Status List — public, no auth (verifiers fetch to check revocation)
+		r.Get("/status-list/revocation", s.StatusList)
+
 		// Deposit lifecycle — JWT-authenticated
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.JWTMiddleware(jwtSecret))

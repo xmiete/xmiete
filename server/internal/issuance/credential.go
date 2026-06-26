@@ -87,6 +87,16 @@ func newSDDisclosure(name string, value any) (enc string, hash string, err error
 	return
 }
 
+// credentialStatus is the W3C Bitstring Status List entry embedded in the SD-JWT.
+// It allows verifiers to check revocation without per-credential polling.
+type credentialStatus struct {
+	ID                   string `json:"id"`                   // statusListURL#index
+	Type                 string `json:"type"`                 // BitstringStatusListEntry
+	StatusPurpose        string `json:"statusPurpose"`        // revocation
+	StatusListIndex      string `json:"statusListIndex"`      // string per W3C spec
+	StatusListCredential string `json:"statusListCredential"` // URL of the status list VC
+}
+
 // sdJWTClaims is the JWT payload for a DepositPledgeAttestation SD-JWT.
 // Fields under _sd are selectively disclosed; all other fields are always revealed.
 type sdJWTClaims struct {
@@ -102,12 +112,13 @@ type sdJWTClaims struct {
 	SD []string `json:"_sd"`
 
 	// Non-selectively-disclosed claims (always revealed in every presentation)
-	DepositID      string `json:"deposit_id"`
-	PledgeDate     string `json:"pledge_date"`
-	StatutoryBasis string `json:"statutory_basis"`
-	IssuingBank    string `json:"issuing_bank"`
-	IssuingBankID  string `json:"issuing_bank_id,omitempty"`
-	PropertyID     string `json:"property_id,omitempty"`
+	DepositID        string            `json:"deposit_id"`
+	PledgeDate       string            `json:"pledge_date"`
+	StatutoryBasis   string            `json:"statutory_basis"`
+	IssuingBank      string            `json:"issuing_bank"`
+	IssuingBankID    string            `json:"issuing_bank_id,omitempty"`
+	PropertyID       string            `json:"property_id,omitempty"`
+	CredentialStatus *credentialStatus `json:"credentialStatus,omitempty"`
 }
 
 // BuildSDJWT constructs and signs a DepositPledgeAttestation SD-JWT credential.
@@ -118,11 +129,11 @@ type sdJWTClaims struct {
 //   - tenant_first_name, tenant_last_name
 //   - pledged_until
 //
-// Always-revealed claims: deposit_id, pledge_date, statutory_basis, issuing_bank.
+// Always-revealed claims: deposit_id, pledge_date, statutory_basis, issuing_bank, credentialStatus.
 //
 // Returns (sdJWTToken, credentialID, error).
 // The token format is: header.payload.signature~disclosure_1~...~disclosure_n~
-func BuildSDJWT(issuerURL string, deposit *models.Deposit, validUntil string) (string, string, error) {
+func BuildSDJWT(issuerURL string, deposit *models.Deposit, validUntil string, statusListIndex int) (string, string, error) {
 	DefaultSigner.init()
 
 	credentialID := "urn:xmiete:credential:" + uuid.NewString()
@@ -183,6 +194,7 @@ func BuildSDJWT(issuerURL string, deposit *models.Deposit, validUntil string) (s
 		sdHashes = append(sdHashes, hash)
 	}
 
+	statusListURL := issuerURL + "/v1/status-list/revocation"
 	claims := sdJWTClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    issuerURL,
@@ -200,6 +212,13 @@ func BuildSDJWT(issuerURL string, deposit *models.Deposit, validUntil string) (s
 		IssuingBank:    bankName,
 		IssuingBankID:  bankID,
 		PropertyID:     deposit.Property.UnitID,
+		CredentialStatus: &credentialStatus{
+			ID:                   fmt.Sprintf("%s#%d", statusListURL, statusListIndex),
+			Type:                 "BitstringStatusListEntry",
+			StatusPurpose:        "revocation",
+			StatusListIndex:      fmt.Sprintf("%d", statusListIndex),
+			StatusListCredential: statusListURL,
+		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)

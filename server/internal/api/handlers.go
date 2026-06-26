@@ -39,16 +39,18 @@ type Server struct {
 	repo       db.Repository
 	webhookURL string // optional; POST state-change events here
 	sessions   issuance.SessionStore
+	allocator  issuance.IndexAllocator // assigns W3C status list indices
 	vpSessions *verification.Store
 	issuerURL  string // base URL for OID4VCI endpoints, e.g. https://api.xmiete.org
 	mailer     mailer.Mailer
 }
 
-func NewServer(repo db.Repository, sessions issuance.SessionStore, webhookURL, issuerURL string, m mailer.Mailer) *Server {
+func NewServer(repo db.Repository, sessions issuance.SessionStore, allocator issuance.IndexAllocator, webhookURL, issuerURL string, m mailer.Mailer) *Server {
 	return &Server{
 		repo:       repo,
 		webhookURL: webhookURL,
 		sessions:   sessions,
+		allocator:  allocator,
 		vpSessions: verification.NewStore(),
 		issuerURL:  issuerURL,
 		mailer:     m,

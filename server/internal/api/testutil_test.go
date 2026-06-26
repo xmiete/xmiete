@@ -98,7 +98,8 @@ func (r *memRepo) UpdateState(_ context.Context, id string, newState models.Life
 func newTestServer(t *testing.T) (*httptest.Server, string) {
 	t.Helper()
 	sessions := issuance.NewStore()
-	srv := api.NewServer(newMemRepo(), sessions, "", "http://localhost:8080", mailer.NoOp{})
+	allocator := &issuance.MemIndexAllocator{}
+	srv := api.NewServer(newMemRepo(), sessions, allocator, "", "http://localhost:8080", mailer.NoOp{})
 	router := api.NewRouter(srv, testJWTSecret)
 	ts := httptest.NewServer(router)
 	t.Cleanup(ts.Close)

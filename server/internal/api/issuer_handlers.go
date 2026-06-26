@@ -84,7 +84,13 @@ func (s *Server) IssueCredential(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sess, err := s.sessions.Create(r.Context(), id, req.ValidUntil)
+	idx, err := s.allocator.AllocateIndex(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to allocate status list index", "INTERNAL_ERROR")
+		return
+	}
+
+	sess, err := s.sessions.Create(r.Context(), id, req.ValidUntil, idx)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to create issuance session", "INTERNAL_ERROR")
 		return
@@ -229,7 +235,7 @@ func (s *Server) Credential(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sdJWT, credentialID, err := issuance.BuildSDJWT(s.issuerURL, deposit, sess.ValidUntil)
+	sdJWT, credentialID, err := issuance.BuildSDJWT(s.issuerURL, deposit, sess.ValidUntil, sess.StatusListIndex)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "credential signing failed", "SIGNING_ERROR")
 		return
@@ -272,6 +278,36 @@ func (s *Server) CredentialStatus(w http.ResponseWriter, r *http.Request) {
 		CredentialID: credID,
 		Status:       status,
 		CheckedAt:    time.Now().UTC().Format(time.RFC3339),
+	})
+}
+
+// ── W3C Bitstring Status List ─────────────────────────────────────────────────
+
+// GET /v1/status-list/revocation
+// Returns the W3C BitstringStatusListCredential as a signed JWT.
+// Verifiers fetch this once and check credential bits locally instead of polling per-credential.
+func (s *Server) StatusList(w http.ResponseWriter, r *http.Request) {
+	indices, err := s.sessions.RevokedStatusListIndices(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to build status list", "INTERNAL_ERROR")
+		return
+	}
+
+	signed, err := issuance.BuildStatusListJWT(s.issuerURL, indices)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to sign status list", "INTERNAL_ERROR")
+		return
+	}
+
+	type statusListResponse struct {
+		ID         string `json:"id"`
+		Type       string `json:"type"`
+		Credential string `json:"credential"`
+	}
+	writeJSON(w, http.StatusOK, statusListResponse{
+		ID:         s.issuerURL + "/v1/status-list/revocation",
+		Type:       "BitstringStatusListCredential",
+		Credential: signed,
 	})
 }
 
