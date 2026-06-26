@@ -84,7 +84,11 @@ func (s *Server) IssueCredential(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sess := s.sessions.Create(id, req.ValidUntil)
+	sess, err := s.sessions.Create(r.Context(), id, req.ValidUntil)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to create issuance session", "INTERNAL_ERROR")
+		return
+	}
 	offerURI := fmt.Sprintf("%s/v1/credential-offers/%s", s.issuerURL, sess.ID)
 	offerURL := "openid-credential-offer://?credential_offer_uri=" + offerURI
 
@@ -102,7 +106,7 @@ func (s *Server) IssueCredential(w http.ResponseWriter, r *http.Request) {
 // Wallet fetches the credential offer to learn the pre-authorized_code grant.
 func (s *Server) GetCredentialOffer(w http.ResponseWriter, r *http.Request) {
 	sessionID := chi.URLParam(r, "sessionId")
-	sess, ok := s.sessions.GetByID(sessionID)
+	sess, ok := s.sessions.GetByID(r.Context(), sessionID)
 	if !ok {
 		writeError(w, http.StatusNotFound, "offer not found or expired", "NOT_FOUND")
 		return
@@ -161,7 +165,7 @@ func (s *Server) Token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, nonce, ok := s.sessions.ExchangeCodeForToken(code)
+	accessToken, nonce, ok := s.sessions.ExchangeCodeForToken(r.Context(), code)
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid, expired, or already-used pre-authorized_code", "INVALID_GRANT")
 		return
@@ -193,7 +197,7 @@ func (s *Server) Credential(w http.ResponseWriter, r *http.Request) {
 	}
 	token := strings.TrimPrefix(authHeader, "Bearer ")
 
-	sess, ok := s.sessions.GetByToken(token)
+	sess, ok := s.sessions.GetByToken(r.Context(), token)
 	if !ok || time.Now().After(sess.ExpiresAt) {
 		writeError(w, http.StatusUnauthorized, "invalid or expired access token", "INVALID_TOKEN")
 		return
@@ -231,7 +235,7 @@ func (s *Server) Credential(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, ok = s.sessions.ConsumeByToken(token, credentialID)
+	_, ok = s.sessions.ConsumeByToken(r.Context(), token, credentialID)
 	if !ok {
 		// Token was valid a moment ago but session moved concurrently — rare race.
 		writeError(w, http.StatusConflict, "session already consumed", "SESSION_CONSUMED")
@@ -254,7 +258,7 @@ func (s *Server) Credential(w http.ResponseWriter, r *http.Request) {
 // Public endpoint — verifiers poll this to check whether a QEAA is still valid.
 func (s *Server) CredentialStatus(w http.ResponseWriter, r *http.Request) {
 	credID := chi.URLParam(r, "credentialId")
-	status, found := s.sessions.CredentialStatus(credID)
+	status, found := s.sessions.CredentialStatus(r.Context(), credID)
 	if !found {
 		writeError(w, http.StatusNotFound, "credential not found", "NOT_FOUND")
 		return

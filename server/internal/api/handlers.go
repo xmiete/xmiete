@@ -38,17 +38,17 @@ import (
 type Server struct {
 	repo       db.Repository
 	webhookURL string // optional; POST state-change events here
-	sessions   *issuance.Store
+	sessions   issuance.SessionStore
 	vpSessions *verification.Store
 	issuerURL  string // base URL for OID4VCI endpoints, e.g. https://api.xmiete.org
 	mailer     mailer.Mailer
 }
 
-func NewServer(repo db.Repository, webhookURL, issuerURL string, m mailer.Mailer) *Server {
+func NewServer(repo db.Repository, sessions issuance.SessionStore, webhookURL, issuerURL string, m mailer.Mailer) *Server {
 	return &Server{
 		repo:       repo,
 		webhookURL: webhookURL,
-		sessions:   issuance.NewStore(),
+		sessions:   sessions,
 		vpSessions: verification.NewStore(),
 		issuerURL:  issuerURL,
 		mailer:     m,
@@ -233,6 +233,7 @@ func (s *Server) Release(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.sessions.RevokeByDepositID(r.Context(), id)
 	s.fireWebhook(updated)
 	s.sendReleaseReceiptEmail(updated)
 	writeJSON(w, http.StatusOK, updated)
@@ -558,6 +559,7 @@ func (s *Server) SettleAccept(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.sessions.RevokeByDepositID(r.Context(), id)
 	s.fireWebhook(updated)
 	writeJSON(w, http.StatusOK, updated)
 }
@@ -659,6 +661,7 @@ func (s *Server) DisputeResolve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.sessions.RevokeByDepositID(r.Context(), id)
 	s.fireWebhook(updated)
 	writeJSON(w, http.StatusOK, updated)
 }

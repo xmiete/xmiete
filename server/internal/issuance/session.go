@@ -16,6 +16,7 @@
 package issuance
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -45,8 +46,8 @@ type Session struct {
 	ValidUntil        string // ISO 8601 date; pledge end date passed by bank
 }
 
-// Store is a thread-safe in-memory issuance session registry.
-// Production deployments should replace this with a Redis- or DB-backed store.
+// Store is a thread-safe in-memory SessionStore.
+// Suitable for local development and tests; not suitable for production multi-instance deployments.
 type Store struct {
 	mu      sync.RWMutex
 	byID    map[string]*Session
@@ -64,7 +65,7 @@ func NewStore() *Store {
 	}
 }
 
-func (s *Store) Create(depositID, validUntil string) *Session {
+func (s *Store) Create(_ context.Context, depositID, validUntil string) (*Session, error) {
 	sess := &Session{
 		ID:                uuid.NewString(),
 		DepositID:         depositID,
@@ -79,40 +80,33 @@ func (s *Store) Create(depositID, validUntil string) *Session {
 	defer s.mu.Unlock()
 	s.byID[sess.ID] = sess
 	s.byCode[sess.PreAuthorizedCode] = sess
-	return sess
+	return sess, nil
 }
 
-func (s *Store) GetByID(id string) (*Session, bool) {
+func (s *Store) GetByID(_ context.Context, id string) (*Session, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	sess, ok := s.byID[id]
 	return sess, ok
 }
 
-func (s *Store) GetByCode(code string) (*Session, bool) {
+func (s *Store) GetByCode(_ context.Context, code string) (*Session, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	sess, ok := s.byCode[code]
 	return sess, ok
 }
 
-func (s *Store) GetByToken(token string) (*Session, bool) {
+func (s *Store) GetByToken(_ context.Context, token string) (*Session, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	sess, ok := s.byToken[token]
 	return sess, ok
 }
 
-func (s *Store) GetByCred(credID string) (*Session, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	sess, ok := s.byCred[credID]
-	return sess, ok
-}
-
 // ExchangeCodeForToken validates the pre-authorized code and issues a short-lived access token.
 // Returns (accessToken, nonce, ok).
-func (s *Store) ExchangeCodeForToken(code string) (string, string, bool) {
+func (s *Store) ExchangeCodeForToken(_ context.Context, code string) (string, string, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	sess, ok := s.byCode[code]
@@ -129,7 +123,7 @@ func (s *Store) ExchangeCodeForToken(code string) (string, string, bool) {
 
 // ConsumeByToken validates the access token, marks the session as consumed,
 // records the issued credential ID, and returns the session.
-func (s *Store) ConsumeByToken(token, credentialID string) (*Session, bool) {
+func (s *Store) ConsumeByToken(_ context.Context, token, credentialID string) (*Session, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	sess, ok := s.byToken[token]
@@ -142,9 +136,9 @@ func (s *Store) ConsumeByToken(token, credentialID string) (*Session, bool) {
 	return sess, true
 }
 
-// RevokeByDepositID marks all credentials issued for a deposit as revoked.
+// RevokeByDepositID marks all issued credentials for a deposit as revoked.
 // Called when the deposit transitions to RELEASED or CLOSED.
-func (s *Store) RevokeByDepositID(depositID string) {
+func (s *Store) RevokeByDepositID(_ context.Context, depositID string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, sess := range s.byCred {
@@ -156,7 +150,7 @@ func (s *Store) RevokeByDepositID(depositID string) {
 
 // CredentialStatus returns the status of a credential by its ID.
 // Returns ("active"|"revoked"|"unknown", bool found).
-func (s *Store) CredentialStatus(credID string) (string, bool) {
+func (s *Store) CredentialStatus(_ context.Context, credID string) (string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	sess, ok := s.byCred[credID]

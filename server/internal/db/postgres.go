@@ -49,6 +49,8 @@ func (r *PostgresRepo) Close() {
 	r.pool.Close()
 }
 
+func (r *PostgresRepo) Pool() *pgxpool.Pool { return r.pool }
+
 func (r *PostgresRepo) Create(ctx context.Context, d *models.Deposit) (*models.Deposit, error) {
 	d.ID = uuid.NewString()
 	d.Deposit.LifecycleState = models.StateRequested

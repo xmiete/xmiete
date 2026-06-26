@@ -45,8 +45,10 @@ func main() {
 	}
 	defer repo.Close()
 
+	sessionStore := db.NewPostgresSessionStore(repo.Pool())
+
 	m := buildMailer()
-	srv := api.NewServer(repo, webhookURL, issuerURL, m)
+	srv := api.NewServer(repo, sessionStore, webhookURL, issuerURL, m)
 	router := api.NewRouter(srv, jwtSecret)
 
 	addr := fmt.Sprintf(":%s", port)
